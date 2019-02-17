@@ -25,9 +25,9 @@ class DbSession(val dbConn: String, val block: (UserRepository) -> Unit){
 }
 
 class UserDb(dbConn: String) : UserRepository {
-    override fun getUser(id: Int): User {}
+    override fun getUser(id: Int): User {TODO()}
 
-    override fun getAllUsers(): List<User> {}
+    override fun getAllUsers(): List<User> {TODO()}
 
     override fun saveUser(user: User) {}
 
