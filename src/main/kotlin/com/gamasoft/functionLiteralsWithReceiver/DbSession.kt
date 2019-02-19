@@ -1,38 +1,39 @@
 package com.gamasoft.functionLiteralsWithReceiver
 
+import java.io.Closeable
 
-data class User(val id: Int, val name: String)
 
-interface UserRepository{
-    fun getUser(id: Int): User
+data class DbUser(val id: Int, val name: String)
 
-    fun getAllUsers(): List<User>
+interface UserRepository: Closeable {
+    fun getUser(id: Int): DbUser
 
-    fun saveUser(user: User)
+    fun getAllUsers(): List<DbUser>
+
+    fun saveUser(user: DbUser)
 
 }
 
-class DbSession(val dbConn: String, val block: (UserRepository) -> Unit){
+class DbSession(val block: (UserRepository) -> Unit){
 
-    fun execute(){
+    fun execute(dbConn: String){
         val userRepo = UserDb(dbConn)
-        userRepo.open()
+        userRepo.open().use {
+            block(userRepo)
+        }
 
-        block(userRepo)
-
-        userRepo.close()
     }
 }
 
-class UserDb(dbConn: String) : UserRepository {
-    override fun getUser(id: Int): User {TODO()}
+class UserDb(private val dbConn: String) : UserRepository {
+    override fun getUser(id: Int): DbUser {TODO()}
 
-    override fun getAllUsers(): List<User> {TODO()}
+    override fun getAllUsers(): List<DbUser> {TODO()}
 
-    override fun saveUser(user: User) {}
+    override fun saveUser(user: DbUser) {}
 
-    fun open(){}
+    fun open(): UserRepository {return this}
 
-    fun close(){}
+    override fun close(){TODO()}
 
 }
