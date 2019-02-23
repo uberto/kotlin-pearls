@@ -1,26 +1,34 @@
 package com.gamasoft.functionLiteralsWithReceiver
 
-data class User(val id: Int, val name: String){
-    fun login() {/* some logic here */}
-    fun buyStuff() {/* some logic here */}
-    fun pay() {/* some logic here */}
+data class Client(
+    private val extService: HttpService
+){
+    fun login() {/* some logic here using extService */}
+    fun buyStuff() {/* some logic here using extService*/}
+    fun pay() {/* some logic here using extService*/}
+    fun receiveStuff(): Boolean = true //some logic here
 }
 
-fun process(block: (User) -> Boolean) {
-    val u = User(123, "Fred")
+class HttpService {
+    fun process(block: Client.() -> Boolean) {
+        val u = Client( this) //
 
-    if (block(u))
-        println("Success!")
-    else
-        println("Failure!")
+        if (block(u))
+            println("Success!")
+        else
+            println("Failure!")
+    }
 }
 
 
 //use example
 fun main(){
 
-    process {
-        it.login()
+    HttpService().process {
+        login()
+        buyStuff()
+        pay()
+        receiveStuff()
     }
 
 }
