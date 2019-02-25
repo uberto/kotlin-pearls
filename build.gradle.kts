@@ -5,7 +5,7 @@ plugins {
     kotlin("jvm") version "1.3.21"
 }
 
-group = "com.gamasoft"
+group = "com.ubertob"
 version = "1.0-SNAPSHOT"
 
 repositories {

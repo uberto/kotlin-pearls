@@ -1,4 +1,4 @@
-package com.gamasoft.namedCompanionObject
+package com.ubertob.namedCompanionObject
 
 import kotlin.math.sqrt
 

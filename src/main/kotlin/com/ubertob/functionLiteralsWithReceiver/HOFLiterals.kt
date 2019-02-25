@@ -1,4 +1,4 @@
-package com.gamasoft.functionLiteralsWithReceiver
+package com.ubertob.functionLiteralsWithReceiver
 
 
 val apply5: ((Int) -> Int) -> Int = { it(5) }

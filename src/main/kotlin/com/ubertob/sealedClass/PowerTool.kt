@@ -1,4 +1,4 @@
-package com.gamasoft.sealedClass
+package com.ubertob.sealedClass
 
 
 interface Article {

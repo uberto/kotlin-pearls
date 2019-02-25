@@ -1,4 +1,4 @@
-package com.gamasoft.functionLiteralsWithReceiver
+package com.ubertob.functionLiteralsWithReceiver
 
 
 interface ExtService

@@ -1,4 +1,4 @@
-package com.gamasoft.propertyDelegation
+package com.ubertob.propertyDelegation
 
 import kotlin.reflect.KProperty
 

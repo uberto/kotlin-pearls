@@ -1,4 +1,4 @@
-package com.gamasoft.functionLiteralsWithReceiver
+package com.ubertob.functionLiteralsWithReceiver
 
 
 fun square(x: Int): Int =  x*x

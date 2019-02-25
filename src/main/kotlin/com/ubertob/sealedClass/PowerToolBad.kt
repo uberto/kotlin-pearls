@@ -1,6 +1,4 @@
-package com.gamasoft.sealedClass
-
-import java.util.function.DoubleBinaryOperator
+package com.ubertob.sealedClass
 
 
 sealed class PowerTool_(val name: String, val price: Double)

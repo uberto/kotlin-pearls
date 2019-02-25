@@ -1,11 +1,10 @@
-package com.gamasoft.sealedClass
+package com.ubertob.sealedClass
 
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.isEqualTo
 import assertk.assertions.size
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 internal class CircularSawTest{
