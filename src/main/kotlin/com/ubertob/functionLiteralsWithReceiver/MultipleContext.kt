@@ -11,7 +11,7 @@ class MyHttpServer(val dbConn: MyConnection) {
     fun <T> contextUser( block: (User) -> T) = block(getAuthenticated())
 
     // Allow block to use both (this and it)
-    fun <T> contextConnectionAndUser( block: MyConnection.(User) -> T) = block(dbConn, getAuthUser())
+    fun <T> contextConnectionAndUser( block: MyConnection.(User) -> T) = block(dbConn, getAuthenticated())
 }
 
 class MyConnection {
