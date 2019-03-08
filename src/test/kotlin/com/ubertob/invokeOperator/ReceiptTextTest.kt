@@ -58,7 +58,7 @@ internal class ReceiptTextTest{
         val receipts = functions
             .map { it(123) }
 
-        assertThat(receipts.toString()).isEqualTo("[TA 123, Thank you for \$123!, My receipt for \$123])
+        assertThat(receipts.toString()).isEqualTo("[TA 123, Thank you for \$123!, My receipt for \$123]")
     }
 
 }
