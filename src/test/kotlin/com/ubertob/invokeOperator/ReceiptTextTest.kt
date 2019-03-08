@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 internal class ReceiptTextTest{
 
     @Test
-    fun `print receipt`() {
+    fun `receipt function class`() {
 
         val receipt = ReceiptText("Thank you for you donation of $%!")
 
@@ -20,7 +20,7 @@ internal class ReceiptTextTest{
 
 
     @Test
-    fun `lambda curry`() {
+    fun `function returning lambda`() {
 
         val receipt = receiptText("Thank you for you donation of $%!")
 
@@ -32,7 +32,7 @@ internal class ReceiptTextTest{
     }
 
     @Test
-    fun `object curry`() {
+    fun `object invoke`() {
 
         val text1 = ReceiptTextObj(123)
 
@@ -53,14 +53,12 @@ internal class ReceiptTextTest{
 
         functions.add(receiptText("TA %"))
         functions.add(ReceiptText("Thank you for $%!"))
-//        functions.add(ReceiptTextObj) not compiling
-
-
+        functions.add(ReceiptTextObj::invoke)
 
         val receipts = functions
             .map { it(123) }
 
-        assertThat(receipts.toString()).isEqualTo("[TA 123, Thank you for \$123!]")
+        assertThat(receipts.toString()).isEqualTo("[TA 123, Thank you for \$123!, My receipt for \$123])
     }
 
 }
