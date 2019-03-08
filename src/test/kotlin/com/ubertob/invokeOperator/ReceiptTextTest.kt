@@ -2,6 +2,7 @@ package com.ubertob.invokeOperator
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import com.ubertob.functionLiteralsWithReceiver.User
 import org.junit.jupiter.api.Test
 
 internal class ReceiptTextTest{
@@ -49,7 +50,7 @@ internal class ReceiptTextTest{
     @Test
     fun `put all functions in a container`(){
 
-        val functions = mutableListOf<FIntToString>()
+        val functions = mutableListOf<(Int) -> String>()
 
         functions.add(receiptText("TA %"))
         functions.add(ReceiptText("Thank you for $%!"))
