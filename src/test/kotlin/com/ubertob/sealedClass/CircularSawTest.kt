@@ -14,7 +14,7 @@ internal class CircularSawTest{
 
         val tools = listOf<PowerTool>(
             CircularSaw(6, true, "abc", 12.3),
-            DrillPress(3000, "jkl", 23.4),
+            DrillPress(3000, "jkl", 23.45),
             CircularSaw(8, false, "fgh", 14.5)
             )
 
