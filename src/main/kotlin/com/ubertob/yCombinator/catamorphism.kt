@@ -23,7 +23,7 @@ fun <A> yCombinator(functor:(F<A>) -> F<A>): F<A> = cataMorphism(functor)
 
 
 fun <A> fix (f:(F<A>) -> F<A>): F<A> = f( fix( f )) //not working because is not lazy
-fun <A> lazyFix (f:(() -> F<A>) -> F<A>): F<A> = f( { lazyFix( f )}) //not working because is not lazy
+fun <A> lazyFix (f:(() -> F<A>) -> F<A>): F<A> = f( { lazyFix( f )}) // working because is lazy (but f is different)
 
 
 
