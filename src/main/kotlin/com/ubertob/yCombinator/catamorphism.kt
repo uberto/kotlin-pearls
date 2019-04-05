@@ -22,7 +22,8 @@ fun <A> yCombinator(functor:(F<A>) -> F<A>): F<A> = cataMorphism(functor)
 //////////////
 
 
-fun <A> fix (f:(F<A>) -> F<A>): F<A> = f( fix( f )) //stackoverflow
+fun <A> fix (f:(F<A>) -> F<A>): F<A> = f( fix( f )) //not working because is not lazy
+fun <A> lazyFix (f:(() -> F<A>) -> F<A>): F<A> = f( { lazyFix( f )}) //not working because is not lazy
 
 
 
@@ -34,6 +35,9 @@ fun reverse(f: F<String>): F<String> = { s -> if (s.isEmpty()) "" else s.last() 
 
 
 
+fun lazyFib(f: () -> F<Int>): F<Int> = { x -> if (x <= 2) 1 else f()(x - 1) + f()(x - 2) }
+
+
 fun main() {
     print("Factorial(1..10)   : ")
     for (i in 1..10) print("${yCombinator(::fac)(i)}  ")
@@ -41,5 +45,13 @@ fun main() {
     for (i in 1..10) print("${yCombinator(::fib)(i)}  ")
     println()
     println("reverse ${yCombinator(::reverse)("uberto barbini")}")
+
+
+    print("\nFibonacci(1..10) lazyFix  : ")
+    for (i in 1..10){
+        val r = lazyFix( ::lazyFib )(i)
+        print("$r  ")
+    }
+
 
 }
