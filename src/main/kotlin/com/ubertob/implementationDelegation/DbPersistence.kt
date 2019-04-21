@@ -8,27 +8,42 @@ interface Persistence{
     fun fetchAll(): List<User>
 }
 
-class UserPersistence(val db: SqlDb): Persistence {
+class UserPersistence(val db: SqlDb<User>): Persistence {
 
     override fun fetchUser(userId: Int): User {
-        return db.exec("select * from users where id = $userId")
+        return db.fetchSingle("select * from users where id = $userId")
     }
 
     override fun fetchAll(): List<User> {
-        return db.exec("select * from users")
+        return db.fetchMulti("select * from users")
     }
 }
 
-interface SqlDb {
-    fun <T> exec(sql: String): T
+
+typealias Row = Map<String, Any>
+
+interface SqlDb<out T> {
+    fun builder(row: Row): T
+    fun execSql(sql: String): List<Row>
+}
+
+fun <T> SqlDb<T>.fetchSingle(sql: String): T = builder( execSql(sql).first() )
+fun <T> SqlDb<T>.fetchMulti(sql: String): List<T> = execSql(sql).map { builder(it) }
+
+
+
+object UserDb: SqlDb<User>, Persistence by UserPersistence(UserDb) {
+    override fun builder(row: Row): User = User(
+        id = row["id"] as Int,
+        name = row["name"] as String)
+
+    override fun execSql(sql: String): List<Row> = //connection to db etc...
+        listOf( mapOf("id" to 5, "name" to "Joe") )
 }
 
 
-class UserDb(up: UserPersistence): Persistence by up
-
-
-
-
 fun main() {
+
+    val joe = UserDb.fetchUser(5)
 
 }
