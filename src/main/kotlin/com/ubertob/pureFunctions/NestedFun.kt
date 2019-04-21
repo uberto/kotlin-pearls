@@ -6,11 +6,11 @@ package com.ubertob.pureFunctions
 fun pitagora(a: Double, b: Double) = Math.sqrt( a*a + b*b)
 
 fun pitagoraˈ(a: Double, b: Double): Double =                                                                                 {fun
-    LET(
+    consider(
         x: Double = (a * a),
         y: Double = (b * b)
     ) = Math.sqrt(x+y)
-                                                                                                                     LET()}()
+                                                                                                                     consider()}()
 
 fun pitagoraˈˈ(a: Double, b: Double): String =                                                                                 {fun
     LET(
