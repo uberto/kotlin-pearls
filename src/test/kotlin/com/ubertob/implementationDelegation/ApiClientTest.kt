@@ -15,5 +15,12 @@ internal class ApiClientTest {
         repeatCall(client, 5)
             .forEach(::printIt)
     }
+
+    @Test
+    fun wrapperDelegation() {
+        val client = DoSomethingWrapper(  HttpApiClient())
+        repeatCall(client, 5)
+            .forEach(::printIt)
+    }
 }
 

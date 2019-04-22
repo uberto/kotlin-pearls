@@ -29,14 +29,44 @@ class DoSomething: ApiClient by HttpApiClient(){
     //other stuff needed to do something
 }
 
-class DoSomethingTest(): ApiClient by ClientMock
+class DoSomethingTest(): ApiClient by ClientMock {
+    //other stuff needed to do something
+}
 
+class DoSomethingDelegated( client: ApiClient): ApiClient by client {
+    //other stuff needed to do something
+}
 
-class DoSomethingWrapper(client: ApiClient): ApiClient by client {
+class DoSomethingOverriden( client: ApiClient): ApiClient by client {
+    //other stuff needed to do something
 
     override fun callApi(request: String): String {
-        println("bye")
-        return "43"
+        return "override $request"
+    }
+}
+
+
+class DoSomethingOnFly( client: ApiClient): ApiClient by object : ApiClient {
+    override fun callApi(request: String): String {
+
+
+        client.callApi(request)
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+} {
+    //other stuff needed to do something
+}
+
+
+class DoSomethingPointless( client: ApiClient): ApiClient by object : ApiClient by ClientMock {
+    //other stuff needed to do something
+}
+
+class DoSomethingWrapper(val client: ApiClient): ApiClient by client {
+
+    override fun callApi(request: String): String {
+        println("DoSomethingWrapper: hello!")
+        return client.callApi(request)
     }
 }
 
