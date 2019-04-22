@@ -3,12 +3,12 @@ package com.ubertob.implementationDelegation
 import com.ubertob.functionLiteralsWithReceiver.User
 
 
-interface Persistence{
+interface UserPersistence{
     fun fetchUser(userId: Int): User
     fun fetchAll(): List<User>
 }
 
-class UserPersistence(val db: SqlDb<User>): Persistence {
+class UserPersistenceBySql(val db: SqlDb<User>): UserPersistence {
 
     override fun fetchUser(userId: Int): User {
         return db.fetchSingle("select * from users where id = $userId")
@@ -27,20 +27,26 @@ interface SqlDb<out T> {
     fun execSql(sql: String): List<Row>
 }
 
+//declared outside interface to avoid overriding
 fun <T> SqlDb<T>.fetchSingle(sql: String): T = builder( execSql(sql).first() )
 fun <T> SqlDb<T>.fetchMulti(sql: String): List<T> = execSql(sql).map { builder(it) }
 
 
 
-object UserDb: SqlDb<User>, Persistence by UserPersistence(UserDb) {
+data class UserSql(val dbConn: String) : SqlDb<User> {
     override fun builder(row: Row): User = User(
         id = row["id"] as Int,
         name = row["name"] as String)
 
-    override fun execSql(sql: String): List<Row> = //connection to db etc...
+    override fun execSql(sql: String): List<Row> =
+        //connection to db, connection pool, run sql and return resultset as map
         listOf( mapOf("id" to 5, "name" to "Joe") )
+
 }
 
+
+
+object UserDb: UserPersistence by UserPersistenceBySql(UserSql("db.company.com"))
 
 fun main() {
 
