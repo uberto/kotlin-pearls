@@ -16,7 +16,6 @@ class HttpApiClient: ApiClient {
         //... lot of code
         return "The Answer to $request is 42"
     }
-
 }
 
 
@@ -26,14 +25,19 @@ fun repeatCall(client: ApiClient, times: Int) =
 
 
 
-class DoSomething: ApiClient by HttpApiClient() {
-
+class DoSomething: ApiClient by HttpApiClient(){
+    //other stuff needed to do something
 }
+
+class DoSomethingTest(): ApiClient by ClientMock
+
 
 class DoSomethingWrapper(client: ApiClient): ApiClient by client {
 
+    override fun callApi(request: String): String {
+        println("bye")
+        return "43"
+    }
 }
 
-class DoSomethingTest(): ApiClient by ClientMock {
 
-}
