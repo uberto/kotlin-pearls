@@ -9,15 +9,15 @@ interface UserPersistence{
     fun fetchAll(): List<User>
 }
 
-class UserPersistenceBySql(val runner: SqlRunner<User>): UserPersistence {
+class UserPersistenceBySql(val dbConn: DbConnection): UserPersistence, SqlRunner<User> by UserSql(dbConn) {
    //translate domain in sql statements but still abstract from db connection,transactions etc.
 
     override fun fetchUser(userId: Int): User {
-        return runner.fetchSingle("select * from users where id = $userId")
+        return fetchSingle("select * from users where id = $userId")
     }
 
     override fun fetchAll(): List<User> {
-        return runner.fetchMulti("select * from users")
+        return fetchMulti("select * from users")
     }
 }
 
@@ -64,11 +64,11 @@ class FakeDbConnection(): DbConnection{
 }
 
 
-object UserDb: UserPersistence by UserPersistenceBySql(UserSql(FakeDbConnection()))
+object UserRepository: UserPersistence by UserPersistenceBySql(FakeDbConnection())
 
 fun main() {
 
-    val joe = UserDb.fetchUser(5)
+    val joe = UserRepository.fetchUser(5)
 
     println("fetched user $joe")
 
