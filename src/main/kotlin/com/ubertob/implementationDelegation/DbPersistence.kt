@@ -42,6 +42,8 @@ data class UserSql(val dbConn: DbConnection) : SqlRunner<User>, DbConnection by 
         id = row["id"] as Int,
         name = row["name"] as String)
 
+    // note that we don't need to implement executeQuery because is already in DbConnection
+
 }
 
 
@@ -55,9 +57,8 @@ interface DbConnection {
 //real example would be: class JdbcDbConnection(dbConnString: String): DbConnection
 
 class FakeDbConnection(): DbConnection{
-
-        override fun executeQuery(sql: String): List<Row> {
-    //trivial example but in reality manage connection pool, transactions etc and translate from JDBC
+//trivial example but in reality manage connection pool, transactions etc and translate from JDBC
+    override fun executeQuery(sql: String): List<Row> {
         return listOf( mapOf("id" to 5, "name" to "Joe") )
     }
 
