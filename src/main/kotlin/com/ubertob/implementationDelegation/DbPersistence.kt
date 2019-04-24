@@ -4,52 +4,72 @@ import com.ubertob.functionLiteralsWithReceiver.User
 
 
 interface UserPersistence{
+    //what is needed by the domain
     fun fetchUser(userId: Int): User
     fun fetchAll(): List<User>
 }
 
-class UserPersistenceBySql(val db: SqlDb<User>): UserPersistence {
+class UserPersistenceBySql(val runner: SqlRunner<User>): UserPersistence {
+   //translate domain in sql statements but still abstract from db connection,transactions etc.
 
     override fun fetchUser(userId: Int): User {
-        return db.fetchSingle("select * from users where id = $userId")
+        return runner.fetchSingle("select * from users where id = $userId")
     }
 
     override fun fetchAll(): List<User> {
-        return db.fetchMulti("select * from users")
+        return runner.fetchMulti("select * from users")
     }
 }
 
 
-typealias Row = Map<String, Any>
+typealias Row = Map<String, Any> //a db row is expressed as a Map field->value
 
-interface SqlDb<out T> {
+interface SqlRunner<out T> {
+    // interface to execute sql statement and return domain objects
     fun builder(row: Row): T
-    fun execSql(sql: String): List<Row>
+    fun executeQuery(sql: String): List<Row>
 }
 
-//declared outside interface to avoid overriding
-fun <T> SqlDb<T>.fetchSingle(sql: String): T = builder( execSql(sql).first() )
-fun <T> SqlDb<T>.fetchMulti(sql: String): List<T> = execSql(sql).map { builder(it) }
+//declared outside interface to avoid overriding and multiple implementations
+fun <T> SqlRunner<T>.fetchSingle(sql: String): T = builder( executeQuery(sql).first() )
+fun <T> SqlRunner<T>.fetchMulti(sql: String): List<T> = executeQuery(sql).map { builder(it) }
 
 
 
-data class UserSql(val dbConn: String) : SqlDb<User> {
+data class UserSql(val dbConn: DbConnection) : SqlRunner<User>, DbConnection by dbConn {
+    // implementation for User
     override fun builder(row: Row): User = User(
         id = row["id"] as Int,
         name = row["name"] as String)
 
-    override fun execSql(sql: String): List<Row> =
-        //connection to db, connection pool, run sql and return resultset as map
-        listOf( mapOf("id" to 5, "name" to "Joe") )
-
 }
 
 
 
-object UserDb: UserPersistence by UserPersistenceBySql(UserSql("db.company.com"))
+interface DbConnection {
+    //abstraction on the db connection/transaction etc
+    fun executeQuery(sql: String): List<Row>
+}
+
+
+//real example would be: class JdbcDbConnection(dbConnString: String): DbConnection
+
+class FakeDbConnection(): DbConnection{
+
+        override fun executeQuery(sql: String): List<Row> {
+    //trivial example but in reality manage connection pool, transactions etc and translate from JDBC
+        return listOf( mapOf("id" to 5, "name" to "Joe") )
+    }
+
+}
+
+
+object UserDb: UserPersistence by UserPersistenceBySql(UserSql(FakeDbConnection()))
 
 fun main() {
 
     val joe = UserDb.fetchUser(5)
+
+    println("fetched user $joe")
 
 }
