@@ -24,13 +24,13 @@ class UserPersistenceBySql(val dbConn: DbConnection): UserPersistence, SqlRunner
 
 typealias Row = Map<String, Any> //a db row is expressed as a Map field->value
 
-interface SqlRunner<out T> {
+interface SqlRunner<out T> { //out is because we can return T or subtypes
     // interface to execute sql statement and return domain objects
     fun builder(row: Row): T
     fun executeQuery(sql: String): List<Row>
 }
 
-//declared outside interface to avoid overriding and multiple implementations
+//declared outside SqlRunner interface to avoid overriding and multiple implementations
 fun <T> SqlRunner<T>.fetchSingle(sql: String): T = builder( executeQuery(sql).first() )
 fun <T> SqlRunner<T>.fetchMulti(sql: String): List<T> = executeQuery(sql).map { builder(it) }
 
