@@ -1,34 +1,38 @@
 package com.ubertob.implementationDelegation
 
-//copier and scanner
+//printer and scanner
 
-data class Fruit (val name: String)
+data class Image (val name: String)
 
-interface pickAFruit{
-    fun pick(): Fruit
-    fun eat(fruit: Fruit)
+interface Printer{
+    fun switchOn()
+    fun switchOff()
+    fun print(image: Image)
 }
 
-interface eatAFruit{
-    fun peel(fruit: Fruit)
-    fun eat(fruit: Fruit)
+interface Scanner{
+    fun switchOn()
+    fun switchOff()
+    fun scan(name: String): Image
 }
 
-object eater: eatAFruit {
-    override fun peel(fruit: Fruit) {
-        println("peeled ${fruit.name}")
+object laserPrinter: Printer {
+    var working = false
+    override fun switchOn() {
+        working = true
     }
 
-    override fun eat(fruit: Fruit) {
-        println("eaten ${fruit.name}")
+    override fun switchOff() {
+        working = false
+    }
+
+    override fun print(image: Image) {
+        println("printed ${image.name}")
     }
 
 }
 
 
-class pickerAndEater: pickAFruit, eatAFruit by eater {
-    override fun pick(): Fruit {
-        return Fruit("Apple")
-    }
-
+class scannerAndPrinter: Scanner, Printer by laserPrinter {
+    override fun scan(name: String): Image = Image(name)
 }
