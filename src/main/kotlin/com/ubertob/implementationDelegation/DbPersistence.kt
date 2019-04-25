@@ -9,7 +9,7 @@ interface UserPersistence{
     fun fetchAll(): List<User>
 }
 
-class UserPersistenceBySql(val dbConn: DbConnection): UserPersistence, SqlRunner<User> by UserSql(dbConn) {
+class UserPersistenceBySql(dbConn: DbConnection): UserPersistence, SqlRunner<User> by UserSql(dbConn) {
    //translate domain in sql statements but still abstract from db connection,transactions etc.
 
     override fun fetchUser(userId: Int): User {
@@ -36,7 +36,7 @@ fun <T> SqlRunner<T>.fetchMulti(sql: String): List<T> = executeQuery(sql).map { 
 
 
 
-data class UserSql(val dbConn: DbConnection) : SqlRunner<User>, DbConnection by dbConn {
+class UserSql( dbConn: DbConnection) : SqlRunner<User>, DbConnection by dbConn {
     // implementation for User
     override fun builder(row: Row): User = User(
         id = row["id"] as Int,
