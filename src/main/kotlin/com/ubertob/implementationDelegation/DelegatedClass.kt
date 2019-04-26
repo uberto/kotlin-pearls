@@ -58,8 +58,11 @@ class DoSomethingOnFly( client: ApiClient): ApiClient by object : ApiClient {
 }
 
 
-class DoSomethingPointless( client: ApiClient): ApiClient by object : ApiClient by ClientMock {
-    //other stuff needed to do something
+class DoSomethingDoubleBy( client: ApiClient): ApiClient by object : ApiClient by client {
+    override fun callApi(request: String): String {
+        println("DoSomethingDoubleBy: hello!")
+        return client.callApi(request)
+    }
 }
 
 class DoSomethingWrapper(val client: ApiClient): ApiClient by client {
