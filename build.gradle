@@ -20,7 +20,7 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib"
     compile 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1'
 
-    testCompile 'com.willowtreeapps.assertk:assertk-jvm:0.13'
+    testCompile 'com.willowtreeapps.assertk:assertk-jvm:0.17'
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.4.2'
     testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.4.2'
 
