@@ -11,3 +11,5 @@ fun String.head() = this.substring(0, 1)
 fun <T> T.foo() = "foo $this"
 
 fun <T: Number> T.doubleIt(): Double = this.toDouble() * 2
+
+fun <T: CharSequence> T.startWith(start: String): Boolean = this.length >= start.length //TODO finish it
