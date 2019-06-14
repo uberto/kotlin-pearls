@@ -43,8 +43,6 @@ fun main() {
     println(g3(7))
     println(g4(7))
 
-
-
     val onePlusLength1 = Int::inc dot String::length
     val onePlusLength2 = String::length `|` Int::inc
 
