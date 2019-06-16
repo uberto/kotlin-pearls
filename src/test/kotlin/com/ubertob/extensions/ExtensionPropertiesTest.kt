@@ -4,8 +4,20 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import org.junit.jupiter.api.Test
+import java.util.*
 
 class ExtensionPropertiesTest {
+
+
+    @Test
+    fun `java beans`() {
+        val p = JavaPerson()
+        p.name = "Fred"
+        p.age = 32
+
+        assertThat(p.name).isEqualTo("Fred")
+        assertThat(p.age).isEqualTo(32)
+    }
 
     @Test
     fun `concat strings and null`() {
@@ -18,7 +30,7 @@ class ExtensionPropertiesTest {
     @Test
     fun `fizzBuzz`() {
 
-       val res = (1..15).map { it.fizzBuzz()}.joinToString()
+        val res = (1..15).map { it.fizzBuzz()}.joinToString()
 
         val expected ="1, 2, Fizz, 4, Buzz, Fizz, 7, 8, Fizz, Buzz, 11, Fizz, 13, 14, FizzBuzz"
 
