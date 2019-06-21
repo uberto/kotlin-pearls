@@ -6,7 +6,9 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import com.ubertob.functionLiteralsWithReceiver.User
+import com.ubertob.outcome.Error
 import org.junit.jupiter.api.Test
+import java.util.*
 
 class FunctionExtensionTest {
 
@@ -30,6 +32,5 @@ class FunctionExtensionTest {
         assertThat(123.4.doubleIt()).isEqualTo(246.8)
         assertThat(123L.doubleIt()).isEqualTo(246.0)
     }
-
 
 }

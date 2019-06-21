@@ -1,8 +1,6 @@
 package com.ubertob.immutableCollections
 
 import java.util.*
-import kotlin.jvm.internal.markers.KMappedMarker
-import kotlin.jvm.internal.markers.KMutableList
 
 class ImmutableList<T>(private val origList: List<T>): List<T> by origList
 
@@ -17,39 +15,31 @@ fun boringMethodToPrintAList(list: List<*>){
 
         println("element $i ${list[i]}")
 
-        massageTheList(list)
+        naughtyFun(list)
 
     }
 }
 
-fun massageTheList(list: List<*>) {
+fun <T> naughtyFun(list: List<T>) {
 
-//  Exception in thread "main" java.lang.UnsupportedOperationException
-// why java.util.Arrays$ArrayList implement MutableList?
-
-// because
-// is MutableList got compiled in a call to
-//
-// kotlin.jvm.internal.TypeIntrinsics
-//    fun isMutableList(obj: Any): Boolean {
-//        return obj is List<*> && (obj !is KMappedMarker || obj is KMutableList)
-//    }
-// (List here is java.util.List, not Kotlin List)
-// so all Java List classes are MutableList unless marked with   KMappedMarker
-
-// everytime you create a new List you are inheriting from KMappedMarker
-// see the ImmutableList I created in this file
-//
-//// signature <T:Ljava/lang/Object;>Ljava/lang/Object;Ljava/util/List<TT;>;Lkotlin/jvm/internal/markers/KMappedMarker;
-//// declaration: com/ubertob/immutableCollections/ImmutableList<T> implements java.util.List<T>, kotlin.jvm.internal.markers.KMappedMarker
-//public final class com/ubertob/immutableCollections/ImmutableList implements java/util/List kotlin/jvm/internal/markers/KMappedMarker {
-
-
-    if (list.isNotEmpty() && list is MutableList<*>){
-        list.removeAt(0)
+    if (list.size > 1 && list is MutableList<T>){
+        val e = list[0]
+        list[0] = list[1]
+        list[1] = e
     }
 
 }
+
+fun <T> sincereFun(list: MutableList<T>) {
+
+    if (list.size > 1){
+        val e = list[0]
+        list[0] = list[1]
+        list[1] = e
+    }
+
+}
+
 
 
 fun main() {

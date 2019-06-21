@@ -1,5 +1,5 @@
 plugins {
-    id "org.jetbrains.kotlin.jvm" version "1.3.30"
+    id "org.jetbrains.kotlin.jvm" version "1.3.40"
 }
 
 group 'com.ubertob'
@@ -18,7 +18,7 @@ wrapper {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib"
-    compile 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.1'
+    compile 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0-M1'
 
     testCompile 'com.willowtreeapps.assertk:assertk-jvm:0.17'
     testCompile 'org.junit.jupiter:junit-jupiter-api:5.4.2'

@@ -19,6 +19,16 @@ class ExtensionPropertiesTest {
         assertThat(p.age).isEqualTo(32)
     }
 
+
+    @Test
+    fun `new property on Java`() {
+        val d = Date()
+        d.millis = 1001
+
+        assertThat(d.millis ).isEqualTo(1001L)
+        assertThat(d.millis ).isEqualTo(d.time)
+    }
+
     @Test
     fun `concat strings and null`() {
         assertThat(null `++` null).isNull()
