@@ -2,22 +2,18 @@ package com.ubertob.immutableCollections
 
 import java.util.*
 
-class ImmutableList<T>(private val origList: List<T>): List<T> by origList
+data class ImmutableList<T>(private val origList: List<T>): List<T> by origList
 
 
-fun boringMethodToPrintAList(list: List<*>){
+fun boringMethodWithAList(list: List<*>){
 
     println(list::class.java)
 
-    val size = list.size
+    println( list )
 
-    for (i in (0 until size)){
+    naughtyFun(list)
 
-        println("element $i ${list[i]}")
-
-        naughtyFun(list)
-
-    }
+    println( list )
 }
 
 fun <T> naughtyFun(list: List<T>) {
@@ -50,18 +46,22 @@ fun main() {
         add(3)
     }
 
-    val immutableList = listOf("albert", "brian", "charlie")
+    val list = listOf("albert", "brian", "charlie")
 
     val mutableList = mutableListOf(1,2,3,4,5,6,7)
 
-    val functionalList = ImmutableList(immutableList)
+    val unmodifiableList = Collections.unmodifiableList( listOf("dan", "eddy", "frank"))
+    val functionalList = ImmutableList(list)
 
-//    boringMethodToPrintAList(functionalList)
 
-    boringMethodToPrintAList(javaList)
+    boringMethodWithAList(javaList)
 
-    boringMethodToPrintAList(immutableList)
+    boringMethodWithAList(list)
 
-    boringMethodToPrintAList(mutableList)
+    boringMethodWithAList(mutableList)
+
+//    boringMethodWithAList(unmodifiableList)  Exception in thread "main" java.lang.UnsupportedOperationException
+
+    boringMethodWithAList(functionalList)
 
 }
