@@ -38,7 +38,7 @@ class ExtensionPropertiesTest {
     }
 
     @Test
-    fun `fizzBuzz`() {
+    fun `fizzBuzz returns list of string according to the rules`() {
 
         val res = (1..15).map { it.fizzBuzz()}.joinToString()
 

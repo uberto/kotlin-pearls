@@ -9,7 +9,10 @@ interface Article {
 sealed class PowerTool(open val price: Double, open val name: String)
 
 
-data class CircularSaw(val diameter: Int, val cordless: Boolean, override val name: String, override val price: Double): PowerTool(price, name)
+data class CircularSaw(val diameter: Int,
+                       val cordless: Boolean,
+                       override val name: String,
+                       override val price: Double): PowerTool(price, name)
 
 data class DrillPress(val rpm: Int, override val name: String, override val price: Double): PowerTool(price, name)
 

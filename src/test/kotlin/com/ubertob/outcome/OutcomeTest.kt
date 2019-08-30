@@ -3,13 +3,12 @@ package com.ubertob.outcome
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 internal class OutcomeTest {
 
 
-    data class NonPerfectSquareError(override val msg: String): Error
+    data class NonPerfectSquareError(override val msg: String): OutcomeError
 
     fun squareRoot(x: Int): Outcome<NonPerfectSquareError, Int> =
         Math.sqrt(x.toDouble()).toInt().let {
