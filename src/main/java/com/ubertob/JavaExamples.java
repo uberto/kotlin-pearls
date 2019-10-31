@@ -7,4 +7,14 @@ public class JavaExamples {
         System.out.println(obj.toString());
     }
 
+
+    static Void todo(){
+        throw new RuntimeException("Not Implemented");
+    }
+
+//    String myMethod(){
+//
+//        return todo(); //dont' compile
+//    }
+
 }

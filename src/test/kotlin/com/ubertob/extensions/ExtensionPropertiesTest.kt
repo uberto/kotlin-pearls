@@ -31,10 +31,10 @@ class ExtensionPropertiesTest {
 
     @Test
     fun `concat strings and null`() {
-        assertThat(null `++` null).isNull()
-        assertThat("A" `++` null).isEqualTo("A")
-        assertThat(null `++` "B").isEqualTo("B")
-        assertThat("A" `++` "B").isEqualTo("AB")
+        assertThat(null or null).isNull()
+        assertThat("A" or null).isEqualTo("A")
+        assertThat(null or "B").isEqualTo("B")
+        assertThat("A" or "B").isEqualTo("AB")
     }
 
     @Test

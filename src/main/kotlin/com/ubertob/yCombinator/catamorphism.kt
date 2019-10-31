@@ -1,46 +1,54 @@
 package com.ubertob.yCombinator
 
 
-typealias F<A> = (A) -> A
+fun <A> fix(f: (EndoMorph<A>) -> EndoMorph<A>): EndoMorph<A> =
+    f(fix(f))  //Fixed point combinator: not working because is not lazy
 
+fun <A> lazyFix(f: (() -> EndoMorph<A>) -> EndoMorph<A>): EndoMorph<A> =
+    f({ lazyFix(f) }) // working because is lazy (but f is not a simple function)
 
 
 
 ////////
+typealias EndoMorph<A> = (A) -> A //Endomorphism: a function that return same type as the input
 
-data class Fix<A>(val invIso: (Fix<A>) -> F<A>)
-
-
-fun<A> cataMorphism(functor:(F<A>) -> F<A>): F<A> = isoMorphism(Fix { rec -> functor{ x -> isoMorphism(rec)(x) } })
+data class LazyFix<A>(val callIt: (LazyFix<A>) -> EndoMorph<A>) //a data class to make a FixPoint lazy
 
 
-fun <A> isoMorphism(recursive: Fix<A>):F<A> = recursive.invIso(recursive)
+fun <A> yCombinator(recursiveFun: (EndoMorph<A>) -> EndoMorph<A>): EndoMorph<A> =
+    runLazily(LazyFix { rec -> recursiveFun { x -> runLazily(rec)(x) } })
 
 
-fun <A> yCombinator(functor:(F<A>) -> F<A>): F<A> = cataMorphism(functor)
+fun <A> runLazily(lazyFix: LazyFix<A>): EndoMorph<A> = lazyFix.callIt(lazyFix)
+
 
 //////////////
 
-
-fun <A> fix (f:(F<A>) -> F<A>): F<A> = f( fix( f )) //not working because is not lazy
-fun <A> lazyFix (f:(() -> F<A>) -> F<A>): F<A> = f( { lazyFix( f )}) // working because is lazy (but f is different)
-
-
-
-fun fac(f: F<Int>): F<Int> = { x -> if (x <= 1) 1 else x * f(x - 1) }
-
-fun fib(f: F<Int>): F<Int> = { x -> if (x <= 2) 1 else f(x - 1) + f(x - 2) }
-
-fun reverse(f: F<String>): F<String> = { s -> if (s.isEmpty()) "" else s.last() + f(s.dropLast(1)) }
+fun <A> fixIt(recursiveFun: (EndoMorph<A>) -> EndoMorph<A>): EndoMorph<A> {
+    val lazyFix: LazyFix<A> = LazyFix { lazyFun: LazyFix<A> -> recursiveFun { x: A -> (lazyFun.callIt(lazyFun))(x) } }
+    return lazyFix.callIt(lazyFix)
+}
 
 
+////
 
-fun lazyFib(f: () -> F<Int>): F<Int> = { x -> if (x <= 2) 1 else f()(x - 1) + f()(x - 2) }
+
+fun fac(f: EndoMorph<Long>): EndoMorph<Long> = { x -> if (x <= 1) 1 else x * f(x - 1) }
+
+fun fib(f: EndoMorph<Int>): EndoMorph<Int> = { x -> if (x <= 2) 1 else f(x - 1) + f(x - 2) }
+
+fun reverse(f: EndoMorph<String>): EndoMorph<String> = { s -> if (s.isEmpty()) "" else s.last() + f(s.dropLast(1)) }
+
+
+fun lazyFib(f: () -> EndoMorph<Int>): EndoMorph<Int> = { x -> if (x <= 2) 1 else f()(x - 1) + f()(x - 2) }
 
 
 fun main() {
+
+    println("Lazy Fib " + lazyFix(::lazyFib)(10))
+
     print("Factorial(1..10)   : ")
-    for (i in 1..10) print("${yCombinator(::fac)(i)}  ")
+    for (i in 1..10L) print("${yCombinator(::fac)(i)}  ")
     print("\nFibonacci(1..10)   : ")
     for (i in 1..10) print("${yCombinator(::fib)(i)}  ")
     println()
@@ -48,8 +56,8 @@ fun main() {
 
 
     print("\nFibonacci(1..10) lazyFix  : ")
-    for (i in 1..10){
-        val r = lazyFix( ::lazyFib )(i)
+    for (i in 1..10) {
+        val r = lazyFix(::lazyFib)(i)
         print("$r  ")
     }
 

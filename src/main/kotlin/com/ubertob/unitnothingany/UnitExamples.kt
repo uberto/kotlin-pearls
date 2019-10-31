@@ -19,3 +19,11 @@ fun main(){
     callMe { Lambdas.printNum }
 
 }
+
+
+fun fooOne(): Unit { while (true) {} }
+fun fooZero(): Nothing { while (true) {} }
+//both ok
+fun barOne(): Unit { println("hi")}
+//fun barZero(): Nothing { println("hi") }  //error
+//barZero not compiling
