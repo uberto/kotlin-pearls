@@ -1,13 +1,24 @@
 package com.ubertob.objects
 
+
+interface Name {
+    val value: String
+
+}
+
+object Frank: Name {
+    override val value: String = "FranK"
+    override fun toString(): String = value
+}
+
 interface NamedObject {
-    val name: String
+    val name: Name
 }
 
 object MyObject: NamedObject {
-    override val name = "Frank"
+    override val name = Frank
 
-    val doubleName = "$name and $name"
+    val doubleName = "name is " + name
 }
 
 
