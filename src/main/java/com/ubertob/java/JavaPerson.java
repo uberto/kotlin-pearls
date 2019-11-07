@@ -1,4 +1,4 @@
-package com.ubertob.extensions;
+package com.ubertob.java;
 
 public class JavaPerson {
     private int age;

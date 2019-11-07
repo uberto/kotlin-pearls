@@ -1,4 +1,4 @@
-package com.ubertob;
+package com.ubertob.java;
 
 import java.util.function.Consumer;
 import java.util.function.Function;

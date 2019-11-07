@@ -3,6 +3,7 @@ package com.ubertob.extensions
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
+import com.ubertob.java.JavaPerson
 import org.junit.jupiter.api.Test
 import java.util.*
 

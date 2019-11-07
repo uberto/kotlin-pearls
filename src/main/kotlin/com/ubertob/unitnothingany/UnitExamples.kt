@@ -1,6 +1,6 @@
 package com.ubertob.unitnothingany
 
-import com.ubertob.Lambdas
+import com.ubertob.java.Lambdas
 
 fun whatIsLove(): Unit = println("Baby don't hurt me!")
 

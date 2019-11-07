@@ -1,4 +1,4 @@
-package com.ubertob;
+package com.ubertob.java;
 
 public class SetComparison {
 
