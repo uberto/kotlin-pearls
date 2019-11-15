@@ -1,38 +1,11 @@
 package com.ubertob.objects
 
-
-interface Name {
-    val value: String
-
+object Leaf {
+    val weight = "weight $leafWeight grams"
+    val color = "is Green"
 }
-
-object Frank: Name {
-    override val value: String = "FranK"
-    override fun toString(): String = value
-}
-
-interface NamedObject {
-    val name: Name
-}
-
-object MyObject: NamedObject {
-    override val name = Frank
-
-    val doubleName = "name is " + name
-}
-
-
 
 fun main() {
-    println(MyObject.name)
-    println(MyObject.doubleName)
+    println("The leaf ${lc}") //if we comment this line the next work
+    println("The leaf ${Leaf.weight}")
 }
-
-//interface PublicRoutes{
-//    val public: PathTemplate<Unit>
-//}
-//object JwfGatewayRoutes: PublicRoutes {
-//    override val public: PathTemplate<Unit> = root + “public”
-//    val returnToProduction = public + “return-to-production”
-//    val fetchAllArticles = public + “fetch-all-articles”
-//}
