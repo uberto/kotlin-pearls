@@ -27,4 +27,27 @@ internal class CircularSawTest{
             size().isEqualTo(3)
         }
     }
+
+    data class Point2(val x: Int, val y: Int)
+
+//    {
+//        constructor(pair: Pair<Int, Int>) : this(pair.first, pair.second)
+//    }
+
+    @Test
+    fun `cicico`(){
+
+            listOf(1 to 2, 3 to 4).map{(x,y) -> Point2(x,y) }
+            listOf(1 to 2, 3 to 4).map{ Point2(it.first,it.second) }
+            listOf(1 to 2, 3 to 4).map(::fromPair)
+            listOf(1 to 2, 3 to 4).mapPair(::Point2)
+
+
+    }
+
+    fun <A, B, R> List<Pair<A, B>>.mapPair(f: (A, B) -> R): List<R> = this.map { f(it.first, it.second) }
+
+    fun fromPair(p: Pair<Int, Int>) = Point2(p.first, p.second)
+
+
 }

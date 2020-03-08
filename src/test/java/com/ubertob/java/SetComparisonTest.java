@@ -1,4 +1,4 @@
-package com.ubertob;
+package com.ubertob.java;
 
 import org.junit.jupiter.api.Test;
 
@@ -17,4 +17,6 @@ class SetComparisonTest {
         assertTrue(mySet.equals(myOtherSet));
 
     }
+
+
 }
