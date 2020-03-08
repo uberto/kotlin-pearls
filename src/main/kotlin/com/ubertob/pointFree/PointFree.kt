@@ -25,8 +25,6 @@ fun <A, B, C> dot2(g: (B) -> C, f: (A) -> B): (A) -> C = g dot f
 //val pasticcio = {x: IntToInt, y: IntToInt -> (dot1(x) ) dot (dot1(y)) }
 //val pasticcio = {x: IntToInt, y: IntToInt -> (dot1(x) ) dot (dot1(y)) }
 
-
-
 fun main() {
 
     val plusThree: IntToInt = { 3 + it }

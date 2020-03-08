@@ -1,16 +1,16 @@
 package com.ubertob.continuations
 
-import kotlinx.coroutines.*
+//import kotlinx.coroutines.*
 
-
-suspend fun doForAWhile(): String {
-        val p = suspendCancellableCoroutine{ cont: CancellableContinuation<String> ->
-            //do something blocking
-            "thread ${Thread.currentThread().name}  active ${cont.isActive}"
-        }
-        yield()
-        return "result $p"
-     }
+//
+//suspend fun doForAWhile(): String {
+//        val p = suspendCancellableCoroutine{ cont: CancellableContinuation<String> ->
+//            //do something blocking
+//            "thread ${Thread.currentThread().name}  active ${cont.isActive}"
+//        }
+//        yield()
+//        return "result $p"
+//     }
 
 
 
@@ -26,10 +26,10 @@ fun fibonacci() = sequence {
 
 
 fun main() {
-
-    runBlocking {
-        println( doForAWhile() )
-    }
+//
+//    runBlocking {
+//        println( doForAWhile() )
+//    }
 
     println(fibonacci().take(10).toList())
 }

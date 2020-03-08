@@ -2,7 +2,8 @@ package com.ubertob.objects
 
 import kotlin.random.Random
 
-val lc = Leaf.color
+val remoteUrl = "http://${RemoteServer.host}/connect"
 
-val leafWeight = Random.nextInt(10) + 5
+val sessionId = Random.nextInt(9000) + 1000
 
+val lazyRemoteUrl = "http://${lazyRemoteServer.host}/connect"
