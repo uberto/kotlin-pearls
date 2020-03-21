@@ -32,3 +32,8 @@ test {
     useJUnitPlatform()
     testLogging.showStandardStreams = true
 }
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs = ["-XXLanguage:+InlineClasses"]
+    }
+}
