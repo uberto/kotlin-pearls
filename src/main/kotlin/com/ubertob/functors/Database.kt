@@ -26,26 +26,26 @@ fun readArticleByTitle_0(title: String, conn: DBConn): Article =
     conn.execStmt("select * from article where title = '$title'", ::articleReader).single()
 
 
-
-//1. let's curry the Connection
-fun readArticleByTitle_1(title: String): DBConn.() -> Article = {
-    execStmt("select * from article where title = '$title'", ::articleReader).single()
-}
-
-
-//2. let's consider the general case
-typealias ReadFromDb<T> = (DBConn) -> Sequence<T>
-fun readArticleByTitle_2(title: String): ReadFromDb<Article>  = { conn ->
-    conn.execStmt("select * from article where title = '$title'", ::articleReader)
-}
-
-//3. let's put ReadFromDb in a class for composition
-data class Database<T>(val sqlStmt: String, val dbReader: DbReader<T>): (DBConn) -> Sequence<T> {
-    override fun invoke(c: DBConn): Sequence<T> = c.execStmt(sqlStmt, dbReader)
-}
-
-fun readArticleByTitle_3(title: String): ReadFromDb<Article>  =
-    Database("select * from article where title = '$title'", ::articleReader)
+//
+////1. let's curry the Connection
+//fun readArticleByTitle_1(title: String): DBConn.() -> Article = {
+//    execStmt("select * from article where title = '$title'", ::articleReader).single()
+//}
+//
+//
+////2. let's consider the general case
+//typealias ReadFromDb<T> = (DBConn) -> Sequence<T>
+//fun readArticleByTitle_2(title: String): ReadFromDb<Article>  = { conn ->
+//    conn.execStmt("select * from article where title = '$title'", ::articleReader)
+//}
+//
+////3. let's put ReadFromDb in a class for composition
+//data class Database<T>(val sqlStmt: String, val dbReader: DbReader<T>): (DBConn) -> Sequence<T> {
+//    override fun invoke(c: DBConn): Sequence<T> = c.execStmt(sqlStmt, dbReader)
+//}
+//
+//fun readArticleByTitle_3(title: String): ReadFromDb<Article>  =
+//    Database("select * from article where title = '$title'", ::articleReader)
 
 //x. we can put together sql+dbReader
 
@@ -62,3 +62,12 @@ fun readArticleByTitle_3(title: String): ReadFromDb<Article>  =
 //x. impossible to lose connections or transactions
 
 //not in scope: create the
+
+
+class ExampleReified {
+    inline fun <reified T> findStuff(): T = when(T::class) {
+         Author::class -> Author("John", Email("john@gmail.com")) as T
+         Email::class ->  Email("john@gmail.com") as T
+        else -> TODO()
+    }
+}
