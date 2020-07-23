@@ -15,7 +15,7 @@ internal class OutcomeTest {
             if (it * it == x)
                 Success(it)
             else
-                NonPerfectSquareError("Not a perfect square ${Math.sqrt(x.toDouble())}").toFailure()
+                NonPerfectSquareError("Not a perfect square ${Math.sqrt(x.toDouble())}").asFailure()
         }
 
 
