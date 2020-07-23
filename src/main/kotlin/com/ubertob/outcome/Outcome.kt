@@ -87,3 +87,10 @@ data class ThrowableError(val t: Throwable) : OutcomeError {
 
 fun <T : OutcomeError> T.asFailure(): Outcome<T, Nothing> = Failure(this)
 fun <T : Any> T.asSuccess(): Outcome<Nothing, T> = Success(this)
+
+
+fun <E: OutcomeError, T: Any> T?.failIfNull(error: E): Outcome<E, T> =
+    if (this == null) error.asFailure() else this.asSuccess()
+
+fun <E: OutcomeError, T: Any> Outcome<E,T>?.failIfNull(error: E): Outcome<E, T> =
+    if (this == null) error.asFailure() else this

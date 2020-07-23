@@ -14,7 +14,7 @@ class JsonTest {
     fun `JsonString`(){
 
         val expected = "abc"
-        val json = JsonString.toJson(expected).shouldSucceed()
+        val json = JsonString.toJson(expected)
 
         val actual =JsonString.from(json).shouldSucceed()
 
@@ -24,27 +24,43 @@ class JsonTest {
 
 
     @Test
-    fun `JsonNumber`(){
+    fun `Json Double`(){
 
         val expected = 123.0
-        val json = JsonNumber.toJson(expected).shouldSucceed()
+        val json = JsonDouble.toJson(expected)
 
-        val actual =JsonNumber.from(json).shouldSucceed()
+        val actual =JsonDouble.from(json).shouldSucceed()
 
         assertThat(actual).isEqualTo(expected)
     }
 
     @Test
-    fun `JsonObject`(){
+    fun `Json Int`(){
+
+        val expected = 124
+        val json = JsonInt.toJson(expected)
+
+        val actual =JsonInt.from(json).shouldSucceed()
+
+        assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Json User and back`(){
 
         val expected = User(123, "abc")
-        val json = JsonUser.toJson(expected).shouldSucceed()
+        val json = JsonUser.toJson(expected)
 
         val actual =JsonUser.from(json).shouldSucceed()
 
         assertThat(actual).isEqualTo(expected)
     }
 }
+
+//todo:
+// complex types (something with User inside)
+// checking parsing error with the position
+// integration with Klaxon
 
 
 
