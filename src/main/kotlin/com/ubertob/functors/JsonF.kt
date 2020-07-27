@@ -3,6 +3,7 @@ package com.ubertob.functors
 import com.ubertob.functionLiteralsWithReceiver.User
 import com.ubertob.outcome.*
 import com.ubertob.unitnothingany.flatMap
+import com.ubertob.unitnothingany.map
 import kotlin.math.roundToInt
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
@@ -77,6 +78,17 @@ object JsonDouble : JsonF<Double> {
 
     override fun toJson(value: Double): JsonNode = JsonNodeNum(value)
 }
+
+data class  JsonArray<T: Any>(val helper: JsonF<T>) : JsonF<List<T>> {
+    override fun from(node: JsonNode): Outcome<JsonError, List<T>> = mapFrom(node, helper::from)
+
+    override fun toJson(value: List<T>): JsonNode = mapToJson(value, helper::toJson)
+
+    private fun <T: Any> mapToJson(objs: List<T>, f: (T) -> JsonNode): JsonNode = JsonNodeArray(objs.map(f))
+    private fun <T: Any> mapFrom(node: JsonNode, f: (JsonNode) -> Outcome<JsonError, T>): Outcome<JsonError, List<T>> =
+        node.asArray().bind{ nodes -> nodes.map{ n:JsonNode -> f(n) }.sequence() }
+}
+
 
 
 fun <T : Any> readObjNode(node: JsonNode, f: (JsonNodeObject) -> Outcome<JsonError, T>): Outcome<JsonError, T> =

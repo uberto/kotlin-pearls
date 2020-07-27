@@ -54,6 +54,7 @@ data class Failure<E : OutcomeError>(val error: E) : Outcome<E, Nothing>(){
 
 }
 
+inline fun <T : Any, U : Any, E : OutcomeError> Outcome<E, T>.bind(f: (T) -> Outcome<E, U>): Outcome<E, U> = flatMap(f)
 
 inline fun <T : Any, U : Any, E : OutcomeError> Outcome<E, T>.flatMap(f: (T) -> Outcome<E, U>): Outcome<E, U> =
     when (this) {
@@ -90,7 +91,13 @@ fun <T : Any> T.asSuccess(): Outcome<Nothing, T> = Success(this)
 
 
 fun <E: OutcomeError, T: Any> T?.failIfNull(error: E): Outcome<E, T> =
-    if (this == null) error.asFailure() else this.asSuccess()
+    this?.asSuccess() ?: error.asFailure()
 
 fun <E: OutcomeError, T: Any> Outcome<E,T>?.failIfNull(error: E): Outcome<E, T> =
-    if (this == null) error.asFailure() else this
+    this ?: error.asFailure()
+
+
+fun <E: OutcomeError, T: Any> Iterable<Outcome<E, T>>.sequence(): Outcome<E, List<T>> =
+    fold(emptyList<T>().asSuccess()){
+            acc: Outcome<E, Iterable<T>>, e: Outcome<E, T> -> acc.flatMap { list -> e.map { list + it } }
+    }

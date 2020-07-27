@@ -53,6 +53,23 @@ class JsonFTest {
 
         expectThat(actual).isEqualTo(expected)
     }
+
+    val jsonUserArray = JsonArray(JsonUser)
+    @Test
+    fun `json array of Users`(){
+
+        val expected = listOf(
+            User(1, "Adam"),
+            User(2, "Bob"),
+            User(3,"Carol")
+        )
+
+        val node = jsonUserArray.toJson(expected)
+
+        val actual = jsonUserArray.from(node).shouldSucceed()
+
+        expectThat(actual).isEqualTo(expected)
+    }
 }
 
 object JsonUser : JsonF<User> {
@@ -73,7 +90,6 @@ object JsonUser : JsonF<User> {
 
 //todo:
 // complex types (something with User inside)
-// arrays
 // checking parsing error with the position
 // integration with Klaxon
 
