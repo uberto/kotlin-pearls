@@ -1,14 +1,13 @@
 package com.ubertob.functors
 
-import assertk.assertThat
-import assertk.assertions.isEqualTo
 import com.ubertob.functionLiteralsWithReceiver.User
 import com.ubertob.outcome.Outcome
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
-//import strikt.api.expectThat
+import strikt.api.expectThat
+import strikt.assertions.isEqualTo
 
-class JsonTest {
+class JsonFTest {
 
     @Test
     fun `JsonString`(){
@@ -18,8 +17,7 @@ class JsonTest {
 
         val actual =JsonString.from(json).shouldSucceed()
 
-        assertThat(actual).isEqualTo(expected)
-//        expectThat(actual).isEqualTo(expected)
+        expectThat(actual).isEqualTo(expected)
     }
 
 
@@ -31,7 +29,7 @@ class JsonTest {
 
         val actual =JsonDouble.from(json).shouldSucceed()
 
-        assertThat(actual).isEqualTo(expected)
+        expectThat(actual).isEqualTo(expected)
     }
 
     @Test
@@ -42,7 +40,7 @@ class JsonTest {
 
         val actual =JsonInt.from(json).shouldSucceed()
 
-        assertThat(actual).isEqualTo(expected)
+        expectThat(actual).isEqualTo(expected)
     }
 
     @Test
@@ -53,12 +51,29 @@ class JsonTest {
 
         val actual =JsonUser.from(json).shouldSucceed()
 
-        assertThat(actual).isEqualTo(expected)
+        expectThat(actual).isEqualTo(expected)
     }
 }
 
+object JsonUser : JsonF<User> {
+
+    val id by JField(JsonInt)
+    val name by JField(JsonString)
+
+    override fun from(node: JsonNode): Outcome<JsonError, User> = readObjNode(node) {
+        ::User `=` id.getFrom(it) `+` name.getFrom(it)
+    }
+
+    override fun toJson(value: User): JsonNode = writeObjNode(
+        id.setTo(value.id),
+        name.setTo(value.name)
+    )
+}
+
+
 //todo:
 // complex types (something with User inside)
+// arrays
 // checking parsing error with the position
 // integration with Klaxon
 

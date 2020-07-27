@@ -3,6 +3,7 @@ package com.ubertob.functors
 import com.ubertob.functionLiteralsWithReceiver.User
 import com.ubertob.outcome.*
 import com.ubertob.unitnothingany.flatMap
+import kotlin.math.roundToInt
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -17,21 +18,27 @@ sealed class JsonNode {
     fun asDouble(): Outcome<JsonError, Double> =
         when (this) {
             is JsonNodeNum -> this.num.asSuccess()
-            else -> JsonError(this.toString(), "Expected Text but node.type is ${this::class}").asFailure()
+            else -> JsonError(this.toString(), "Expected Number but node.type is ${this::class}").asFailure()
         }
 
     fun asInt(): Outcome<JsonError, Int> =
         when (this) {
-            is JsonNodeNum -> this.num.toInt().asSuccess()
-            else -> JsonError(this.toString(), "Expected Text but node.type is ${this::class}").asFailure()
+            is JsonNodeNum -> this.num.roundToInt().asSuccess()
+            else -> JsonError(this.toString(), "Expected Number but node.type is ${this::class}").asFailure()
         }
 
     fun asObject(): Outcome<JsonError, Map<String, JsonNode>> =
         when (this) {
             is JsonNodeObject -> (this.fieldMap).asSuccess()
-            else -> JsonError(this.toString(), "Expected Text but node.type is ${this::class}").asFailure()
+            else -> JsonError(this.toString(), "Expected Object but node.type is ${this::class}").asFailure()
         }
 
+    fun asArray(): Outcome<JsonError, List<JsonNode>> =
+        when (this) {
+            is JsonNodeArray -> (this.values).asSuccess()
+            else -> JsonError(this.toString(), "Expected Array but node.type is ${this::class}").asFailure()
+        }
+    //todo bool and null
 }
 
 data class JsonNodeString(val text: String) : JsonNode()
@@ -55,44 +62,30 @@ interface JsonF<T : Any> {
 object JsonString : JsonF<String> {
     override fun from(node: JsonNode): Outcome<JsonError, String> = node.asText()
 
-    override fun toJson(value: String): JsonNode =
-        JsonNodeString(value)
+    override fun toJson(value: String): JsonNode = JsonNodeString(value)
 
 }
 
 object JsonInt : JsonF<Int> {
     override fun from(node: JsonNode): Outcome<JsonError, Int> = node.asInt()
 
-    override fun toJson(value: Int): JsonNode =
-        JsonNodeNum(value.toDouble())
+    override fun toJson(value: Int): JsonNode = JsonNodeNum(value.toDouble())
 }
 
 object JsonDouble : JsonF<Double> {
     override fun from(node: JsonNode): Outcome<JsonError, Double> = node.asDouble()
 
-    override fun toJson(value: Double): JsonNode =
-        JsonNodeNum(value)
+    override fun toJson(value: Double): JsonNode = JsonNodeNum(value)
 }
 
-object JsonUser : JsonF<User> {
 
-    val id by JField(JsonInt)
-    val name by JField(JsonString)
+fun <T : Any> readObjNode(node: JsonNode, f: (JsonNodeObject) -> Outcome<JsonError, T>): Outcome<JsonError, T> =
+    (node as? JsonNodeObject)?.let (f).failIfNull(JsonError(node.toString(), "Expected json object"))
 
-    override fun from(node: JsonNode): Outcome<JsonError, User> = (node as? JsonNodeObject)?.let { objNode ->
+fun writeObjNode(vararg fields: Pair<String, JsonNode>): JsonNode =
+    JsonNodeObject( fields.toMap() )
 
-        ::User `=` id.fromObj(objNode) `+` name.fromObj(objNode)
 
-    }.failIfNull(JsonError(node.toString(), "Expected json object"))
-
-    override fun toJson(value: User): JsonNode =
-        JsonNodeObject(
-            mapOf(
-                id.asPair(value.id),
-                name.asPair(value.name)
-            )
-        )
-}
 
 infix fun <P1 : Any, P2 : Any, R : Any> (Function2<P1, P2, R>).`=`(o: Outcome<JsonError, P1>): Outcome<JsonError, Function1<P2, R>> =
     o.map { p1 -> { p2: P2 -> this(p1, p2) } }
@@ -103,12 +96,12 @@ infix fun <P1 : Any, R : Any> (Outcome<JsonError, Function1<P1, R>>).`+`(o: Outc
 
 data class JsonProp<T : Any>(val propName: String, val jf: JsonF<T>) {
 
-    fun fromObj(node: JsonNodeObject): Outcome<JsonError, T> =
+    fun getFrom(node: JsonNodeObject): Outcome<JsonError, T> =
         node.fieldMap[propName]
             .flatMap { idn -> jf.from(idn) }
             .failIfNull(JsonError(node.toString(), "Not found $propName"))
 
-    fun asPair(value: T): Pair<String, JsonNode> =
+    fun setTo(value: T): Pair<String, JsonNode> =
         propName to jf.toJson(value)
 
 
