@@ -28,9 +28,15 @@ sealed class JsonNode {
             else -> JsonError(this.toString(), "Expected Number but node.type is ${this::class}").asFailure()
         }
 
-    fun asObject(): Outcome<JsonError, Map<String, JsonNode>> =
+    fun asBoolean(): Outcome<JsonError, Boolean> =
         when (this) {
-            is JsonNodeObject -> (this.fieldMap).asSuccess()
+            is JsonNodeBoolean -> this.value.asSuccess()
+            else -> JsonError(this.toString(), "Expected Boolean but node.type is ${this::class}").asFailure()
+        }
+
+    fun <T> asObject(f: JsonNodeObject.() -> Outcome<JsonError, T>): Outcome<JsonError, T> =
+        when (this) {
+            is JsonNodeObject -> f( this)
             else -> JsonError(this.toString(), "Expected Object but node.type is ${this::class}").asFailure()
         }
 
@@ -39,14 +45,18 @@ sealed class JsonNode {
             is JsonNodeArray -> (this.values).asSuccess()
             else -> JsonError(this.toString(), "Expected Array but node.type is ${this::class}").asFailure()
         }
-    //todo bool and null
+    //todo null
+
+
 }
 
 data class JsonNodeString(val text: String) : JsonNode()
 data class JsonNodeNum(val num: Double) : JsonNode()
 data class JsonNodeBoolean(val value: Boolean) : JsonNode()
 data class JsonNodeArray(val values: List<JsonNode>) : JsonNode()
-data class JsonNodeObject(val fieldMap: Map<String, JsonNode>) : JsonNode()
+data class JsonNodeObject(val fieldMap: Map<String, JsonNode>) : JsonNode() {
+    fun <T: Any> JsonProp<T>.get(): Outcome<JsonError, T> = getFrom(this@JsonNodeObject)
+}
 object JsonNodeNull : JsonNode()
 
 
@@ -59,6 +69,12 @@ interface JsonF<T : Any> {
     fun toJson(value: T): JsonNode
 }
 
+object JsonBoolean : JsonF<Boolean> {
+    override fun from(node: JsonNode): Outcome<JsonError, Boolean> = node.asBoolean()
+
+    override fun toJson(value: Boolean): JsonNode = JsonNodeBoolean(value)
+
+}
 
 object JsonString : JsonF<String> {
     override fun from(node: JsonNode): Outcome<JsonError, String> = node.asText()
@@ -91,8 +107,6 @@ data class  JsonArray<T: Any>(val helper: JsonF<T>) : JsonF<List<T>> {
 
 
 
-fun <T : Any> readObjNode(node: JsonNode, f: (JsonNodeObject) -> Outcome<JsonError, T>): Outcome<JsonError, T> =
-    (node as? JsonNodeObject)?.let (f).failIfNull(JsonError(node.toString(), "Expected json object"))
 
 fun writeObjNode(vararg fields: Pair<String, JsonNode>): JsonNode =
     JsonNodeObject( fields.toMap() )
@@ -111,7 +125,7 @@ data class JsonProp<T : Any>(val propName: String, val jf: JsonF<T>) {
     fun getFrom(node: JsonNodeObject): Outcome<JsonError, T> =
         node.fieldMap[propName]
             .flatMap { idn -> jf.from(idn) }
-            .failIfNull(JsonError(node.toString(), "Not found $propName"))
+            ?: JsonError(node.toString(), "Not found $propName").asFailure()
 
     fun setTo(value: T): Pair<String, JsonNode> =
         propName to jf.toJson(value)

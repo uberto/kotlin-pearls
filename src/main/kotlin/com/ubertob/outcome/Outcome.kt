@@ -1,7 +1,7 @@
 package com.ubertob.outcome
 
 
-sealed class Outcome<out E : OutcomeError, out T : Any> {
+sealed class Outcome<out E : OutcomeError, out T> {
 
     fun <U : Any> map(f: (T) -> U): Outcome<E, U> =
         when (this) {
@@ -34,7 +34,7 @@ sealed class Outcome<out E : OutcomeError, out T : Any> {
     }
 }
 
-data class Success<T : Any>(val value: T) : Outcome<Nothing, T>() {
+data class Success<T>(val value: T) : Outcome<Nothing, T>() {
 
     override operator fun iterator() = object : Iterator<T> {
         private var called = false
@@ -54,9 +54,9 @@ data class Failure<E : OutcomeError>(val error: E) : Outcome<E, Nothing>(){
 
 }
 
-inline fun <T : Any, U : Any, E : OutcomeError> Outcome<E, T>.bind(f: (T) -> Outcome<E, U>): Outcome<E, U> = flatMap(f)
+inline fun <T, U, E : OutcomeError> Outcome<E, T>.bind(f: (T) -> Outcome<E, U>): Outcome<E, U> = flatMap(f)
 
-inline fun <T : Any, U : Any, E : OutcomeError> Outcome<E, T>.flatMap(f: (T) -> Outcome<E, U>): Outcome<E, U> =
+inline fun <T, U, E : OutcomeError> Outcome<E, T>.flatMap(f: (T) -> Outcome<E, U>): Outcome<E, U> =
     when (this) {
         is Success<T> -> f(value)
         is Failure<E> -> this
@@ -101,3 +101,48 @@ fun <E: OutcomeError, T: Any> Iterable<Outcome<E, T>>.sequence(): Outcome<E, Lis
     fold(emptyList<T>().asSuccess()){
             acc: Outcome<E, Iterable<T>>, e: Outcome<E, T> -> acc.flatMap { list -> e.map { list + it } }
     }
+
+fun <ERR: OutcomeError, A, R: Any> liftA(
+    f: (A) -> R,
+    a: Outcome<ERR, A>
+): Outcome<ERR, R> = a.map { av ->
+    f(av)
+}
+
+fun <ERR: OutcomeError, A, B, R: Any> liftA2(
+    f: (A, B) -> R,
+    a: Outcome<ERR, A>,
+    b: Outcome<ERR, B>
+): Outcome<ERR, R> = a.flatMap { av -> b.map { bv ->
+    f(av,bv)
+} }
+
+fun <ERR: OutcomeError, A, B, C, R: Any> liftA3(
+    f: (A, B, C) -> R,
+    a: Outcome<ERR, A>,
+    b: Outcome<ERR, B>,
+    c: Outcome<ERR, C>
+): Outcome<ERR, R> = a.flatMap { av -> b.flatMap { bv -> c.map { cv  ->
+    f(av,bv,cv)
+} } }
+
+fun <ERR: OutcomeError, A, B, C, D, R: Any> liftA4(
+    f: (A, B, C, D) -> R,
+    a: Outcome<ERR, A>,
+    b: Outcome<ERR, B>,
+    c: Outcome<ERR, C>,
+    d: Outcome<ERR, D>
+): Outcome<ERR, R> = a.flatMap { av -> b.flatMap { bv -> c.flatMap { cv -> d.map { dv ->
+    f(av,bv,cv,dv)
+} } } }
+
+fun <ERR: OutcomeError, A, B, C, D, E, R: Any> liftA5(
+    f: (A, B, C, D, E) -> R,
+    a: Outcome<ERR, A>,
+    b: Outcome<ERR, B>,
+    c: Outcome<ERR, C>,
+    d: Outcome<ERR, D>,
+    e: Outcome<ERR, E>
+): Outcome<ERR, R> = a.flatMap { av -> b.flatMap { bv -> c.flatMap { cv -> d.flatMap { dv -> e.map { ev ->
+    f(av,bv,cv,dv,ev)
+} } } } }
