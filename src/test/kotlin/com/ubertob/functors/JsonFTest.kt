@@ -4,6 +4,7 @@ package com.ubertob.functors
 import com.ubertob.outcome.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
+import strikt.api.expect
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
 
@@ -74,7 +75,7 @@ class JsonFTest {
     }
 
     @Test
-    fun `Json Invoice and back`() {
+    fun `Json with objects inside and back`() {
 
         val ann = Customer(1, "ann")
         val expected = Invoice(1001, true, ann, listOf("a", "b", "c"), 123.45)
@@ -84,7 +85,27 @@ class JsonFTest {
 
         expectThat(actual).isEqualTo(expected)
     }
+
+
+    @Test
+    fun `Json with nullable and back`() {
+
+        val toothpaste = Product(1001, "toothpast \"whiter than white\"", 12.34)
+        val offer = Product(10001, "special offer", null)
+        val toothpasteJson = JsonProduct.toJson(toothpaste)
+        val offerJson = JsonProduct.toJson(offer)
+
+        val actualToothpaste = JsonProduct.from(toothpasteJson).shouldSucceed()
+        val actualOffer = JsonProduct.from(offerJson).shouldSucceed()
+
+        expect{
+            that(actualToothpaste).isEqualTo(toothpaste)
+            that(actualOffer).isEqualTo(offer)
+        }
+    }
+
 }
+data class Customer(val id: Int, val name: String)
 
 object JsonCustomer : JsonF<Customer> {
 
@@ -100,6 +121,8 @@ object JsonCustomer : JsonF<Customer> {
         name.setTo(value.name)
     )
 }
+
+data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val items: List<String>, val total: Double)
 
 object JsonInvoice : JsonF<Invoice> {
     val id by JField(JsonInt)
@@ -122,15 +145,35 @@ object JsonInvoice : JsonF<Invoice> {
     )
 }
 
+data class Product(val id: Int, val desc: String, val price: Double?)
+
+object JsonProduct: JsonF<Product>{
+    val id by JField(JsonInt)
+    val desc by JField(JsonString)
+    val price by JField(JsonDouble)
+
+    override fun from(node: JsonNode): Outcome<JsonError, Product> =
+        node.asObject {
+            liftA3(::Product, id.get(), desc.get(), price.getOptional())
+        }
+
+    override fun toJson(value: Product): JsonNode=
+        writeObjNode(
+            id.setTo(value.id),
+            desc.setTo(value.desc),
+            price.setTo(value.price)
+        )
+
+}
+
 
 
 //todo:
-// checking parsing error with the position
+// nullable fields
+// checking parsing error with the position (add parent and path)
 // integration with Klaxon
 
-data class Customer(val id: Int, val name: String)
 
-data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val items: List<String>, val total: Double)
 
 
 fun <T : Any> Outcome<*, T>.shouldSucceed(): T =

@@ -56,6 +56,7 @@ data class JsonNodeBoolean(val value: Boolean) : JsonNode()
 data class JsonNodeArray(val values: List<JsonNode>) : JsonNode()
 data class JsonNodeObject(val fieldMap: Map<String, JsonNode>) : JsonNode() {
     fun <T: Any> JsonProp<T>.get(): Outcome<JsonError, T> = getFrom(this@JsonNodeObject)
+    fun <T: Any> JsonProp<T>.getOptional(): Outcome<JsonError, T?> = getOptionalFrom(this@JsonNodeObject)
 }
 object JsonNodeNull : JsonNode()
 
@@ -108,8 +109,8 @@ data class  JsonArray<T: Any>(val helper: JsonF<T>) : JsonF<List<T>> {
 
 
 
-fun writeObjNode(vararg fields: Pair<String, JsonNode>): JsonNode =
-    JsonNodeObject( fields.toMap() )
+fun writeObjNode(vararg fields: Pair<String, JsonNode>?): JsonNode =
+    JsonNodeObject( fields.filterNotNull().toMap() )
 
 
 
@@ -127,9 +128,15 @@ data class JsonProp<T : Any>(val propName: String, val jf: JsonF<T>) {
             .flatMap { idn -> jf.from(idn) }
             ?: JsonError(node.toString(), "Not found $propName").asFailure()
 
-    fun setTo(value: T): Pair<String, JsonNode> =
-        propName to jf.toJson(value)
+    fun getOptionalFrom(node: JsonNodeObject): Outcome<JsonError, T?> =
+        node.fieldMap[propName]
+            .flatMap { idn -> jf.from(idn) }
+            ?: null.asSuccess()
 
+    fun setTo(value: T?): Pair<String, JsonNode>? =
+        value?.let {
+            propName to jf.toJson(it)
+        }
 
 }
 
