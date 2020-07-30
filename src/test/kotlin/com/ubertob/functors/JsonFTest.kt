@@ -150,11 +150,11 @@ data class Product(val id: Int, val desc: String, val price: Double?)
 object JsonProduct: JsonF<Product>{
     val id by JField(JsonInt)
     val desc by JField(JsonString)
-    val price by JField(JsonDouble)
+    val price by JFieldOp(JsonDouble)
 
     override fun from(node: JsonNode): Outcome<JsonError, Product> =
         node.asObject {
-            liftA3(::Product, id.get(), desc.get(), price.getOptional())
+            liftA3(::Product, id.get(), desc.get(), price.get())
         }
 
     override fun toJson(value: Product): JsonNode=

@@ -1,9 +1,7 @@
 package com.ubertob.functors
 
-import com.ubertob.functionLiteralsWithReceiver.User
 import com.ubertob.outcome.*
 import com.ubertob.unitnothingany.flatMap
-import com.ubertob.unitnothingany.map
 import kotlin.math.roundToInt
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
@@ -36,7 +34,7 @@ sealed class JsonNode {
 
     fun <T> asObject(f: JsonNodeObject.() -> Outcome<JsonError, T>): Outcome<JsonError, T> =
         when (this) {
-            is JsonNodeObject -> f( this)
+            is JsonNodeObject -> f(this)
             else -> JsonError(this.toString(), "Expected Object but node.type is ${this::class}").asFailure()
         }
 
@@ -55,9 +53,10 @@ data class JsonNodeNum(val num: Double) : JsonNode()
 data class JsonNodeBoolean(val value: Boolean) : JsonNode()
 data class JsonNodeArray(val values: List<JsonNode>) : JsonNode()
 data class JsonNodeObject(val fieldMap: Map<String, JsonNode>) : JsonNode() {
-    fun <T: Any> JsonProp<T>.get(): Outcome<JsonError, T> = getFrom(this@JsonNodeObject)
-    fun <T: Any> JsonProp<T>.getOptional(): Outcome<JsonError, T?> = getOptionalFrom(this@JsonNodeObject)
+    fun <T : Any> JsonProp<T>.get(): Outcome<JsonError, T> = getFrom(this@JsonNodeObject)
+    fun <T: Any> JsonPropOp<T>.get(): Outcome<JsonError, T?> = getFrom(this@JsonNodeObject)
 }
+
 object JsonNodeNull : JsonNode()
 
 
@@ -65,7 +64,7 @@ data class JsonError(val json: String, val reason: String) : OutcomeError {
     override val msg = reason
 }
 
-interface JsonF<T : Any> {
+interface JsonF<T> {
     fun from(node: JsonNode): Outcome<JsonError, T>
     fun toJson(value: T): JsonNode
 }
@@ -96,22 +95,19 @@ object JsonDouble : JsonF<Double> {
     override fun toJson(value: Double): JsonNode = JsonNodeNum(value)
 }
 
-data class  JsonArray<T: Any>(val helper: JsonF<T>) : JsonF<List<T>> {
+data class JsonArray<T : Any>(val helper: JsonF<T>) : JsonF<List<T>> {
     override fun from(node: JsonNode): Outcome<JsonError, List<T>> = mapFrom(node, helper::from)
 
     override fun toJson(value: List<T>): JsonNode = mapToJson(value, helper::toJson)
 
-    private fun <T: Any> mapToJson(objs: List<T>, f: (T) -> JsonNode): JsonNode = JsonNodeArray(objs.map(f))
-    private fun <T: Any> mapFrom(node: JsonNode, f: (JsonNode) -> Outcome<JsonError, T>): Outcome<JsonError, List<T>> =
-        node.asArray().bind{ nodes -> nodes.map{ n:JsonNode -> f(n) }.sequence() }
+    private fun <T : Any> mapToJson(objs: List<T>, f: (T) -> JsonNode): JsonNode = JsonNodeArray(objs.map(f))
+    private fun <T : Any> mapFrom(node: JsonNode, f: (JsonNode) -> Outcome<JsonError, T>): Outcome<JsonError, List<T>> =
+        node.asArray().bind { nodes -> nodes.map { n: JsonNode -> f(n) }.sequence() }
 }
 
 
-
-
 fun writeObjNode(vararg fields: Pair<String, JsonNode>?): JsonNode =
-    JsonNodeObject( fields.filterNotNull().toMap() )
-
+    JsonNodeObject(fields.filterNotNull().toMap())
 
 
 infix fun <P1 : Any, P2 : Any, R : Any> (Function2<P1, P2, R>).`=`(o: Outcome<JsonError, P1>): Outcome<JsonError, Function1<P2, R>> =
@@ -128,7 +124,15 @@ data class JsonProp<T : Any>(val propName: String, val jf: JsonF<T>) {
             .flatMap { idn -> jf.from(idn) }
             ?: JsonError(node.toString(), "Not found $propName").asFailure()
 
-    fun getOptionalFrom(node: JsonNodeObject): Outcome<JsonError, T?> =
+    fun setTo(value: T): Pair<String, JsonNode>? =
+        propName to jf.toJson(value)
+
+
+}
+
+data class JsonPropOp<T : Any>(val propName: String, val jf: JsonF<T>) {
+
+    fun getFrom(node: JsonNodeObject): Outcome<JsonError, T?> =
         node.fieldMap[propName]
             .flatMap { idn -> jf.from(idn) }
             ?: null.asSuccess()
@@ -140,9 +144,17 @@ data class JsonProp<T : Any>(val propName: String, val jf: JsonF<T>) {
 
 }
 
+
 class JField<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<JsonF<*>, JsonProp<T>> {
 
     override fun getValue(thisRef: JsonF<*>, property: KProperty<*>): JsonProp<T> =
         JsonProp(property.name, jsonFSingleton)
+
+}
+
+class JFieldOp<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<JsonF<*>, JsonPropOp<T>> {
+
+    override fun getValue(thisRef: JsonF<*>, property: KProperty<*>): JsonPropOp<T> =
+        JsonPropOp(property.name, jsonFSingleton)
 
 }
