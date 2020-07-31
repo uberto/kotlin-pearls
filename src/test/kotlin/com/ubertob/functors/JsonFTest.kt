@@ -112,11 +112,11 @@ object JsonCustomer : JsonF<Customer> {
     val id by JField(JsonInt)
     val name by JField(JsonString)
 
-    override fun from(node: JsonNode): Outcome<JsonError, Customer> = node.asObject {
+    override fun from(node: AbstractJsonNode): Outcome<JsonError, Customer> = node.asObject {
         liftA2(::Customer, id.get(), name.get())
     }
 
-    override fun toJson(value: Customer): JsonNode = writeObjNode(
+    override fun toJson(value: Customer): AbstractJsonNode = writeObjNode(
         id.setTo(value.id),
         name.setTo(value.name)
     )
@@ -131,12 +131,12 @@ object JsonInvoice : JsonF<Invoice> {
     val items by JField(JsonArray(JsonString))
     val total by JField(JsonDouble)
 
-    override fun from(node: JsonNode): Outcome<JsonError, Invoice> = node.asObject {
+    override fun from(node: AbstractJsonNode): Outcome<JsonError, Invoice> = node.asObject {
         liftA5(::Invoice, id.get(), vat.get(), customer.get(), items.get(), total.get())
     }
 
 
-    override fun toJson(value: Invoice): JsonNode= writeObjNode(
+    override fun toJson(value: Invoice): AbstractJsonNode= writeObjNode(
         id.setTo(value.id),
         vat.setTo(value.vat),
         customer.setTo(value.customer),
@@ -152,12 +152,12 @@ object JsonProduct: JsonF<Product>{
     val desc by JField(JsonString)
     val price by JFieldOp(JsonDouble)
 
-    override fun from(node: JsonNode): Outcome<JsonError, Product> =
+    override fun from(node: AbstractJsonNode): Outcome<JsonError, Product> =
         node.asObject {
             liftA3(::Product, id.get(), desc.get(), price.get())
         }
 
-    override fun toJson(value: Product): JsonNode=
+    override fun toJson(value: Product): AbstractJsonNode=
         writeObjNode(
             id.setTo(value.id),
             desc.setTo(value.desc),
@@ -169,7 +169,6 @@ object JsonProduct: JsonF<Product>{
 
 
 //todo:
-// nullable fields
 // checking parsing error with the position (add parent and path)
 // integration with Klaxon
 
