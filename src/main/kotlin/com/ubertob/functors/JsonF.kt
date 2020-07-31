@@ -61,7 +61,6 @@ data class JsonNodeObject(val fieldMap: Map<String, AbstractJsonNode>) : Abstrac
 }
 
 object JsonNodeNull : AbstractJsonNode()
-object Root: AbstractJsonNode()
 
 
 class JsonError(json: AbstractJsonNode, reason: String) : OutcomeError {
@@ -72,6 +71,17 @@ class JsonError(json: AbstractJsonNode, reason: String) : OutcomeError {
 interface JsonF<T> {
     fun from(node: AbstractJsonNode): Outcome<JsonError, T>
     fun toJson(value: T): AbstractJsonNode
+}
+
+interface JsonObj<T> : JsonF<T> {
+
+    override fun from(node: AbstractJsonNode): Outcome<JsonError, T> = node.asObject{ deserialize() }
+
+    override fun toJson(value: T): AbstractJsonNode = serialize(value)
+
+    fun JsonNodeObject.deserialize(): Outcome<JsonError, T>
+
+    fun serialize(value: T): JsonNodeObject
 }
 
 object JsonBoolean : JsonF<Boolean> {
@@ -111,7 +121,7 @@ data class JsonArray<T : Any>(val helper: JsonF<T>) : JsonF<List<T>> {
 }
 
 
-fun writeObjNode(vararg fields: Pair<String, AbstractJsonNode>?): AbstractJsonNode =
+fun writeObjNode(vararg fields: Pair<String, AbstractJsonNode>?): JsonNodeObject =
     JsonNodeObject(fields.filterNotNull().toMap())
 
 
@@ -157,7 +167,7 @@ class JField<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<JsonF<*>,
 
 }
 
-class JFieldOp<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<JsonF<*>, JsonPropOp<T>> {
+class JFieldOptional<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<JsonF<*>, JsonPropOp<T>> {
 
     override fun getValue(thisRef: JsonF<*>, property: KProperty<*>): JsonPropOp<T> =
         JsonPropOp(property.name, jsonFSingleton)

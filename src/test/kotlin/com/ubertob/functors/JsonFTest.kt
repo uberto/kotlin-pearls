@@ -124,19 +124,18 @@ object JsonCustomer : JsonF<Customer> {
 
 data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val items: List<String>, val total: Double)
 
-object JsonInvoice : JsonF<Invoice> {
+object JsonInvoice : JsonObj<Invoice> {
     val id by JField(JsonInt)
     val vat by JField(JsonBoolean)
     val customer by JField(JsonCustomer)
     val items by JField(JsonArray(JsonString))
     val total by JField(JsonDouble)
 
-    override fun from(node: AbstractJsonNode): Outcome<JsonError, Invoice> = node.asObject {
-        liftA5(::Invoice, id.get(), vat.get(), customer.get(), items.get(), total.get())
-    }
 
+    override fun JsonNodeObject.deserialize(): Outcome<JsonError, Invoice> =
+            liftA5(::Invoice, id.get(), vat.get(), customer.get(), items.get(), total.get())
 
-    override fun toJson(value: Invoice): AbstractJsonNode= writeObjNode(
+    override fun serialize(value: Invoice): JsonNodeObject = writeObjNode(
         id.setTo(value.id),
         vat.setTo(value.vat),
         customer.setTo(value.customer),
@@ -150,7 +149,7 @@ data class Product(val id: Int, val desc: String, val price: Double?)
 object JsonProduct: JsonF<Product>{
     val id by JField(JsonInt)
     val desc by JField(JsonString)
-    val price by JFieldOp(JsonDouble)
+    val price by JFieldOptional(JsonDouble)
 
     override fun from(node: AbstractJsonNode): Outcome<JsonError, Product> =
         node.asObject {
@@ -170,7 +169,7 @@ object JsonProduct: JsonF<Product>{
 
 //todo:
 // checking parsing error with the position (add parent and path)
-// integration with Klaxon
+
 
 
 
