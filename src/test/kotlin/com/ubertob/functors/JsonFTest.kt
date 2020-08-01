@@ -48,9 +48,9 @@ class JsonFTest {
     fun `Json Customer and back`() {
 
         val expected = Customer(123, "abc")
-        val json = JsonCustomer.toJson(expected)
+        val json = JCustomer.toJson(expected)
 
-        val actual = JsonCustomer.from(json).shouldSucceed()
+        val actual = JCustomer.from(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -59,7 +59,7 @@ class JsonFTest {
     @Test
     fun `json array of Customers`() {
 
-        val jsonUserArray = JArray(JsonCustomer)
+        val jsonUserArray = JArray(JCustomer)
 
         val expected = listOf(
             Customer(1, "Adam"),
@@ -79,11 +79,11 @@ class JsonFTest {
 
         val toothpaste = Product(1001, "toothpaste \"whiter than white\"", 12.34)
         val offer = Product(10001, "special offer", null)
-        val toothpasteJson = JsonProduct.toJson(toothpaste)
-        val offerJson = JsonProduct.toJson(offer)
+        val toothpasteJson = JProduct.toJson(toothpaste)
+        val offerJson = JProduct.toJson(offer)
 
-        val actualToothpaste = JsonProduct.from(toothpasteJson).shouldSucceed()
-        val actualOffer = JsonProduct.from(offerJson).shouldSucceed()
+        val actualToothpaste = JProduct.from(toothpasteJson).shouldSucceed()
+        val actualOffer = JProduct.from(offerJson).shouldSucceed()
 
         expect {
             that(actualToothpaste).isEqualTo(toothpaste)
@@ -96,9 +96,9 @@ class JsonFTest {
     @Test
     fun `Json with objects inside and back`() {
 
-        val json = JsonInvoice.toJson(invoice)
+        val json = JInvoice.toJson(invoice)
 
-        val actual = JsonInvoice.from(json).shouldSucceed()
+        val actual = JInvoice.from(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(invoice)
     }
@@ -108,11 +108,11 @@ class JsonFTest {
     fun `JsonString Customer and back`() {
 
         val expected = Customer(123, "abc")
-        val json = toJsonString(expected, JsonCustomer).shouldSucceed()
+        val json = toJsonString(expected, JCustomer).shouldSucceed()
 
         println(json)
 
-        val actual = fromJsonString(json, JsonCustomer).shouldSucceed()
+        val actual = fromJsonString(json, JCustomer).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -124,14 +124,14 @@ class JsonFTest {
     fun `JsonString Product and back`() {
 
 
-        val jsonToothpaste = toJsonString(toothpaste, JsonProduct).shouldSucceed()
-        val jsonOffer = toJsonString(offer, JsonProduct).shouldSucceed()
+        val jsonToothpaste = toJsonString(toothpaste, JProduct).shouldSucceed()
+        val jsonOffer = toJsonString(offer, JProduct).shouldSucceed()
 
         println(jsonToothpaste)
         println(jsonOffer)
 
-        val actualToothpaste = fromJsonString(jsonToothpaste, JsonProduct).shouldSucceed()
-        val actualOffer = fromJsonString(jsonOffer, JsonProduct).shouldSucceed()
+        val actualToothpaste = fromJsonString(jsonToothpaste, JProduct).shouldSucceed()
+        val actualOffer = fromJsonString(jsonOffer, JProduct).shouldSucceed()
 
         expectThat(actualToothpaste).isEqualTo(toothpaste)
         expectThat(actualOffer).isEqualTo(offer)
@@ -142,11 +142,11 @@ class JsonFTest {
     @Test
     fun `JsonString Invoice and back`() {
 
-        val json = toJsonString(invoice, JsonInvoice).shouldSucceed()
+        val json = toJsonString(invoice, JInvoice).shouldSucceed()
 
         println(json)
 
-        val actual = fromJsonString(json, JsonInvoice).shouldSucceed()
+        val actual = fromJsonString(json, JInvoice).shouldSucceed()
 
         expectThat(actual).isEqualTo(invoice)
     }
@@ -155,7 +155,7 @@ class JsonFTest {
     fun `parsing illegal json gives us precise errors`(){
         val illegalJson = "{\"id\":1001,\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price:12.34},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
 
-        val error = fromJsonString(illegalJson, JsonInvoice).shouldFail()
+        val error = fromJsonString(illegalJson, JInvoice).shouldFail()
 
         expectThat(error.msg).isEqualTo("error at parsing - Unexpected character at position 140: 'i' (ASCII: 105)'")
     }
@@ -164,7 +164,7 @@ class JsonFTest {
     fun `parsing wrong json gives us precise errors`(){
         val jsonWithDifferentField = "{\"id\":1001,\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price\":125},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
 
-        val error = fromJsonString(jsonWithDifferentField, JsonInvoice).shouldFail()
+        val error = fromJsonString(jsonWithDifferentField, JInvoice).shouldFail()
 
         expectThat(error.msg).isEqualTo("error at </items/0/price> - Expected Double but found JsonNodeInt(num=125, path=[items, 0, price])")
     }
@@ -173,7 +173,7 @@ class JsonFTest {
 
 data class Customer(val id: Int, val name: String)
 
-object JsonCustomer : JAny<Customer> {
+object JCustomer : JAny<Customer> {
 
     val id by JField(JInt)
     val name by JField(JString)
@@ -190,7 +190,7 @@ object JsonCustomer : JAny<Customer> {
 
 data class Product(val id: Int, val desc: String, val price: Double?)
 
-object JsonProduct : JAny<Product> {
+object JProduct : JAny<Product> {
     val id by JField(JInt)
     val desc by JField(JString)
     val price by JFieldOptional(JDouble)
@@ -211,11 +211,11 @@ object JsonProduct : JAny<Product> {
 
 data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val items: List<Product>, val total: Double)
 
-object JsonInvoice : JAny<Invoice> {
+object JInvoice : JAny<Invoice> {
     val id by JField(JInt)
     val vat = JsonProp("vat-to-pay", JBoolean)
-    val customer by JField(JsonCustomer)
-    val items by JField(JArray(JsonProduct))
+    val customer by JField(JCustomer)
+    val items by JField(JArray(JProduct))
     val total by JField(JDouble)
 
 
@@ -230,7 +230,6 @@ object JsonInvoice : JAny<Invoice> {
         total.setTo(value.total)
     )
 }
-
 
 
 
