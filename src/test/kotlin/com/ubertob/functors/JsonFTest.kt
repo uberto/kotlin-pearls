@@ -1,7 +1,10 @@
 package com.ubertob.functors
 
 
-import com.ubertob.outcome.*
+import com.ubertob.outcome.Outcome
+import com.ubertob.outcome.liftA2
+import com.ubertob.outcome.liftA3
+import com.ubertob.outcome.liftA5
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import strikt.api.expect
@@ -11,7 +14,7 @@ import strikt.assertions.isEqualTo
 class JsonFTest {
 
     @Test
-    fun `JsonString`() {
+    fun `JsonNode String`() {
 
         val expected = "abc"
         val json = JsonString.toJson(expected)
@@ -98,25 +101,58 @@ class JsonFTest {
         val actualToothpaste = JsonProduct.from(toothpasteJson).shouldSucceed()
         val actualOffer = JsonProduct.from(offerJson).shouldSucceed()
 
-        expect{
+        expect {
             that(actualToothpaste).isEqualTo(toothpaste)
             that(actualOffer).isEqualTo(offer)
         }
     }
 
+
+    @Test
+    fun `JsonString Customer and back`() {
+
+        val expected = Customer(123, "abc")
+        val json = toJsonString(expected, JsonCustomer).shouldSucceed()
+
+        println(json)
+
+        val actual = fromJsonString(json, JsonCustomer).shouldSucceed()
+
+        expectThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `JsonString Product and back`() {
+
+        val toothpaste = Product(1001, "toothpast \"whiter than white\"", 12.34)
+        val offer = Product(10001, "special offer", null)
+
+        val jsonToothpaste = toJsonString(toothpaste, JsonProduct).shouldSucceed()
+        val jsonOffer = toJsonString(offer, JsonProduct).shouldSucceed()
+
+        println(jsonToothpaste)
+        println(jsonOffer)
+
+        val actualToothpaste = fromJsonString(jsonToothpaste, JsonProduct).shouldSucceed()
+        val actualOffer = fromJsonString(jsonOffer, JsonProduct).shouldSucceed()
+
+        expectThat(actualToothpaste).isEqualTo(toothpaste)
+        expectThat(actualOffer).isEqualTo(offer)
+    }
+
 }
+
 data class Customer(val id: Int, val name: String)
 
-object JsonCustomer : JsonF<Customer> {
+object JsonCustomer : JsonObj<Customer> {
 
     val id by JField(JsonInt)
     val name by JField(JsonString)
 
-    override fun from(node: AbstractJsonNode): Outcome<JsonError, Customer> = node.asObject {
+    override fun JsonNodeObject.deserialize(): Outcome<JsonError, Customer> =
         liftA2(::Customer, id.get(), name.get())
-    }
 
-    override fun toJson(value: Customer): AbstractJsonNode = writeObjNode(
+    override fun serialize(value: Customer) = writeObjNode(
         id.setTo(value.id),
         name.setTo(value.name)
     )
@@ -133,7 +169,7 @@ object JsonInvoice : JsonObj<Invoice> {
 
 
     override fun JsonNodeObject.deserialize(): Outcome<JsonError, Invoice> =
-            liftA5(::Invoice, id.get(), vat.get(), customer.get(), items.get(), total.get())
+        liftA5(::Invoice, id.get(), vat.get(), customer.get(), items.get(), total.get())
 
     override fun serialize(value: Invoice): JsonNodeObject = writeObjNode(
         id.setTo(value.id),
@@ -146,17 +182,16 @@ object JsonInvoice : JsonObj<Invoice> {
 
 data class Product(val id: Int, val desc: String, val price: Double?)
 
-object JsonProduct: JsonF<Product>{
+object JsonProduct : JsonObj<Product> {
     val id by JField(JsonInt)
     val desc by JField(JsonString)
     val price by JFieldOptional(JsonDouble)
 
-    override fun from(node: AbstractJsonNode): Outcome<JsonError, Product> =
-        node.asObject {
-            liftA3(::Product, id.get(), desc.get(), price.get())
-        }
 
-    override fun toJson(value: Product): AbstractJsonNode=
+    override fun JsonNodeObject.deserialize(): Outcome<JsonError, Product> =
+        liftA3(::Product, id.get(), desc.get(), price.get())
+
+    override fun serialize(value: Product): JsonNodeObject =
         writeObjNode(
             id.setTo(value.id),
             desc.setTo(value.desc),
@@ -166,12 +201,9 @@ object JsonProduct: JsonF<Product>{
 }
 
 
-
 //todo:
+// arrays
 // checking parsing error with the position (add parent and path)
-
-
-
 
 
 fun <T : Any> Outcome<*, T>.shouldSucceed(): T =

@@ -1,7 +1,11 @@
 package com.ubertob.functors
 
+import com.beust.klaxon.JsonObject
+import com.beust.klaxon.Parser
 import com.ubertob.outcome.*
 import com.ubertob.unitnothingany.flatMap
+import java.lang.RuntimeException
+import java.lang.StringBuilder
 import kotlin.math.roundToInt
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
@@ -19,13 +23,13 @@ sealed class AbstractJsonNode {
 
     fun asDouble(): Outcome<JsonError, Double> =
         when (this) {
-            is JsonNodeNum -> this.num.asSuccess()
+            is JsonNodeDouble -> this.num.asSuccess()
             else -> JsonError(this, "Expected Number but node.type is ${this::class}").asFailure()
         }
 
     fun asInt(): Outcome<JsonError, Int> =
         when (this) {
-            is JsonNodeNum -> this.num.roundToInt().asSuccess()
+            is JsonNodeInt -> this.num.asSuccess()
             else -> JsonError(this, "Expected Number but node.type is ${this::class}").asFailure()
         }
 
@@ -52,7 +56,8 @@ sealed class AbstractJsonNode {
 }
 
 data class JsonNodeString(val text: String) : AbstractJsonNode()
-data class JsonNodeNum(val num: Double) : AbstractJsonNode()
+data class JsonNodeInt(val num: Int) : AbstractJsonNode()
+data class JsonNodeDouble(val num: Double) : AbstractJsonNode()
 data class JsonNodeBoolean(val value: Boolean) : AbstractJsonNode()
 data class JsonNodeArray(val values: List<AbstractJsonNode>) : AbstractJsonNode()
 data class JsonNodeObject(val fieldMap: Map<String, AbstractJsonNode>) : AbstractJsonNode() {
@@ -101,13 +106,13 @@ object JsonString : JsonF<String> {
 object JsonInt : JsonF<Int> {
     override fun from(node: AbstractJsonNode): Outcome<JsonError, Int> = node.asInt()
 
-    override fun toJson(value: Int): AbstractJsonNode = JsonNodeNum(value.toDouble())
+    override fun toJson(value: Int): AbstractJsonNode = JsonNodeInt(value)
 }
 
 object JsonDouble : JsonF<Double> {
     override fun from(node: AbstractJsonNode): Outcome<JsonError, Double> = node.asDouble()
 
-    override fun toJson(value: Double): AbstractJsonNode = JsonNodeNum(value)
+    override fun toJson(value: Double): AbstractJsonNode = JsonNodeDouble(value)
 }
 
 data class JsonArray<T : Any>(val helper: JsonF<T>) : JsonF<List<T>> {
@@ -173,3 +178,51 @@ class JFieldOptional<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<J
         JsonPropOp(property.name, jsonFSingleton)
 
 }
+
+
+//----klaxon part
+
+
+fun klaxonConvert(json: String): Outcome<JsonError, JsonNodeObject> =
+    Outcome.tryThis { Parser.default().parse(StringBuilder(json)) as JsonObject }
+        .mapFailure { JsonError(JsonNodeNull, it.msg) }
+        .map { fromKlaxon(it.map) }
+
+fun fromKlaxon(map: MutableMap<String, Any?>): JsonNodeObject =
+    map.entries.mapNotNull {entry ->
+        entry.value?.let {
+            when(it){
+                is Int -> entry.key to JsonNodeInt(it)
+                is Double -> entry.key to JsonNodeDouble(it)
+                is String -> entry.key to JsonNodeString(it)
+                is Boolean -> entry.key to JsonNodeBoolean(it)
+                is JsonObject -> entry.key to fromKlaxon(it.map)
+                else -> throw RuntimeException("!!!! array?")
+            }
+        }
+    }.toMap().let { JsonNodeObject(it) }
+
+fun toKlaxon(node: JsonNodeObject): Map<String, Any?> =
+
+    node.fieldMap.entries.map { entry ->
+        when(val v = entry.value) {
+            is JsonNodeBoolean -> entry.key to v.value
+            is JsonNodeString -> entry.key to v.text
+            is JsonNodeInt -> entry.key to v.num
+            is JsonNodeDouble -> entry.key to v.num
+            is JsonNodeArray -> TODO()
+            is JsonNodeObject -> entry.key to toKlaxon(v)
+            JsonNodeNull -> entry.key to null
+        }
+    }.toMap()
+
+
+
+
+fun <T> fromJsonString(json: String, conv: JsonObj<T>): Outcome<JsonError, T> =
+    klaxonConvert(json)
+        .bind { conv.from(it) }
+
+fun <T> toJsonString(value : T, conv: JsonObj<T>): Outcome<JsonError, String> = conv.serialize(value)
+    .let {  JsonObject( toKlaxon(it)).toJsonString().asSuccess() }
+
