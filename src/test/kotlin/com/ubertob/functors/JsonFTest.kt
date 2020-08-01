@@ -1,10 +1,7 @@
 package com.ubertob.functors
 
 
-import com.ubertob.outcome.Outcome
-import com.ubertob.outcome.liftA2
-import com.ubertob.outcome.liftA3
-import com.ubertob.outcome.liftA5
+import com.ubertob.outcome.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import strikt.api.expect
@@ -80,7 +77,7 @@ class JsonFTest {
     @Test
     fun `Json with nullable and back`() {
 
-        val toothpaste = Product(1001, "toothpast \"whiter than white\"", 12.34)
+        val toothpaste = Product(1001, "toothpaste \"whiter than white\"", 12.34)
         val offer = Product(10001, "special offer", null)
         val toothpasteJson = JsonProduct.toJson(toothpaste)
         val offerJson = JsonProduct.toJson(offer)
@@ -94,17 +91,16 @@ class JsonFTest {
         }
     }
 
+    val ann = Customer(1, "ann")
 
     @Test
     fun `Json with objects inside and back`() {
 
-        val ann = Customer(1, "ann")
-        val expected = Invoice(1001, true, ann, listOf("a", "b", "c"), 123.45)
-        val json = JsonInvoice.toJson(expected)
+        val json = JsonInvoice.toJson(invoice)
 
         val actual = JsonInvoice.from(json).shouldSucceed()
 
-        expectThat(actual).isEqualTo(expected)
+        expectThat(actual).isEqualTo(invoice)
     }
 
 
@@ -121,11 +117,12 @@ class JsonFTest {
         expectThat(actual).isEqualTo(expected)
     }
 
+    val toothpaste = Product(1001, "toothpaste \"whiter than white\"", 12.34)
+    val offer = Product(10001, "special offer", null)
+
     @Test
     fun `JsonString Product and back`() {
 
-        val toothpaste = Product(1001, "toothpast \"whiter than white\"", 12.34)
-        val offer = Product(10001, "special offer", null)
 
         val jsonToothpaste = toJsonString(toothpaste, JsonProduct).shouldSucceed()
         val jsonOffer = toJsonString(offer, JsonProduct).shouldSucceed()
@@ -139,21 +136,38 @@ class JsonFTest {
         expectThat(actualToothpaste).isEqualTo(toothpaste)
         expectThat(actualOffer).isEqualTo(offer)
     }
+    val invoice = Invoice(1001, true, ann, listOf( toothpaste, offer), 123.45)
+
 
     @Test
     fun `JsonString Invoice and back`() {
 
-
-
-        val ann = Customer(1, "ann")
-        val expected = Invoice(1001, true, ann, listOf("a", "b", "c"), 123.45)
-        val json = toJsonString(expected, JsonInvoice).shouldSucceed()
+        val json = toJsonString(invoice, JsonInvoice).shouldSucceed()
 
         println(json)
 
         val actual = fromJsonString(json, JsonInvoice).shouldSucceed()
 
-        expectThat(actual).isEqualTo(expected)
+        expectThat(actual).isEqualTo(invoice)
+    }
+
+    @Test
+    fun `parsing illegal json gives us precise errors`(){
+        val illegalJson = "{\"id\":1001,\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price:12.34},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
+
+        val error = fromJsonString(illegalJson, JsonInvoice).shouldFail()
+
+        expectThat(error.msg).isEqualTo("error at parsing  - Unexpected character at position 140: 'i' (ASCII: 105)'")
+    }
+
+    @Test
+    fun `parsing wrong json gives us precise errors`(){
+        val jsonWithDifferentField = "{\"id\":1001,\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price\":125},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
+
+        val error = fromJsonString(jsonWithDifferentField, JsonInvoice).shouldFail()
+
+        //error at  JsonNodeInt(num=125) - Expected Double but node.type is JsonNodeInt
+        expectThat(error.msg).isEqualTo("?")
     }
 
 }
@@ -174,27 +188,6 @@ object JsonCustomer : JsonObj<Customer> {
     )
 }
 
-data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val items: List<String>, val total: Double)
-
-object JsonInvoice : JsonObj<Invoice> {
-    val id by JField(JsonInt)
-    val vat = JsonProp("vat-to-pay", JsonBoolean)
-    val customer by JField(JsonCustomer)
-    val items by JField(JsonArrayNode(JsonString))
-    val total by JField(JsonDouble)
-
-
-    override fun JsonNodeObject.deserialize(): Outcome<JsonError, Invoice> =
-        liftA5(::Invoice, id.get(), vat.get(), customer.get(), items.get(), total.get())
-
-    override fun serialize(value: Invoice): JsonNodeObject = writeObjNode(
-        id.setTo(value.id),
-        vat.setTo(value.vat),
-        customer.setTo(value.customer),
-        items.setTo(value.items),
-        total.setTo(value.total)
-    )
-}
 
 data class Product(val id: Int, val desc: String, val price: Double?)
 
@@ -217,6 +210,29 @@ object JsonProduct : JsonObj<Product> {
 }
 
 
+data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val items: List<Product>, val total: Double)
+
+object JsonInvoice : JsonObj<Invoice> {
+    val id by JField(JsonInt)
+    val vat = JsonProp("vat-to-pay", JsonBoolean)
+    val customer by JField(JsonCustomer)
+    val items by JField(JsonArrayNode(JsonProduct))
+    val total by JField(JsonDouble)
+
+
+    override fun JsonNodeObject.deserialize(): Outcome<JsonError, Invoice> =
+        liftA5(::Invoice, id.get(), vat.get(), customer.get(), items.get(), total.get())
+
+    override fun serialize(value: Invoice): JsonNodeObject = writeObjNode(
+        id.setTo(value.id),
+        vat.setTo(value.vat),
+        customer.setTo(value.customer),
+        items.setTo(value.items),
+        total.setTo(value.total)
+    )
+}
+
+
 //todo:
 // checking parsing error with the position (add parent and path)
 // JProp<T?> would work instead of JPropOp?
@@ -224,3 +240,6 @@ object JsonProduct : JsonObj<Product> {
 
 fun <T : Any> Outcome<*, T>.shouldSucceed(): T =
     this.fold({ fail(it.msg) }, { it })
+
+fun <E : OutcomeError> Outcome<E, *>.shouldFail(): E =
+    this.fold({ it }, { fail("Should have failed but was $it") })

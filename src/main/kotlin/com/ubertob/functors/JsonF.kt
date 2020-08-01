@@ -15,19 +15,19 @@ sealed class AbstractJsonNode {
     fun asText(): Outcome<JsonError, String> =
         when (this) {
             is JsonNodeString -> this.text.asSuccess()
-            else -> JsonError(this, "Expected Text but node.type is ${this::class}").asFailure()
+            else -> JsonError(this, "Expected Text but node.type is ${this::class.simpleName}").asFailure()
         }
 
     fun asDouble(): Outcome<JsonError, Double> =
         when (this) {
             is JsonNodeDouble -> this.num.asSuccess()
-            else -> JsonError(this, "Expected Number but node.type is ${this::class}").asFailure()
+            else -> JsonError(this, "Expected Double but node.type is ${this::class.simpleName}").asFailure()
         }
 
     fun asInt(): Outcome<JsonError, Int> =
         when (this) {
             is JsonNodeInt -> this.num.asSuccess()
-            else -> JsonError(this, "Expected Number but node.type is ${this::class}").asFailure()
+            else -> JsonError(this, "Expected Int but node.type is ${this::class.simpleName}").asFailure()
         }
 
     fun asBoolean(): Outcome<JsonError, Boolean> =
@@ -65,9 +65,9 @@ data class JsonNodeObject(val fieldMap: Map<String, AbstractJsonNode>) : Abstrac
 object JsonNodeNull : AbstractJsonNode()
 
 
-class JsonError(json: AbstractJsonNode, reason: String) : OutcomeError {
-    override val msg = reason
-    val parentLocation = json.toString()
+data class JsonError(val node: AbstractJsonNode?, val reason: String) : OutcomeError {
+    val location = node?.path ?: "parsing"
+    override val msg = "error at $location ${node?.toString().orEmpty()} - $reason"
 }
 
 interface JsonF<T> {
@@ -187,7 +187,7 @@ class JFieldOptional<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<J
 
 fun klaxonConvert(json: String): Outcome<JsonError, JsonNodeObject> =
     Outcome.tryThis { Parser.default().parse(StringBuilder(json)) as JsonObject }
-        .mapFailure { JsonError(JsonNodeNull, it.msg) }
+        .mapFailure { JsonError(null, it.msg) }
         .bind { fromKlaxon(it.map) }
 
 fun fromKlaxon(map: MutableMap<String, Any?>): Outcome<JsonError, JsonNodeObject> =
@@ -205,7 +205,7 @@ private fun valueToNode(value: Any): Outcome<JsonError, AbstractJsonNode> {
         is Boolean -> JsonNodeBoolean(value).asSuccess()
         is JsonObject -> fromKlaxon(value.map)
         is JsonArray<*> -> JsonNodeArray( value.value.filterNotNull().map {e -> valueToNode(e).onFailure { return it.asFailure() } } ).asSuccess()
-        else -> JsonError(JsonNodeNull, "type ${value::class} impossible to map! $value" ).asFailure()
+        else -> JsonError(null, "type ${value::class} impossible to map! $value" ).asFailure()
     }
 }
 
