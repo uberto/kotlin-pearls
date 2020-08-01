@@ -157,7 +157,7 @@ class JsonFTest {
 
         val error = fromJsonString(illegalJson, JsonInvoice).shouldFail()
 
-        expectThat(error.msg).isEqualTo("error at parsing  - Unexpected character at position 140: 'i' (ASCII: 105)'")
+        expectThat(error.msg).isEqualTo("error at parsing - Unexpected character at position 140: 'i' (ASCII: 105)'")
     }
 
     @Test
@@ -166,8 +166,7 @@ class JsonFTest {
 
         val error = fromJsonString(jsonWithDifferentField, JsonInvoice).shouldFail()
 
-        //error at  JsonNodeInt(num=125) - Expected Double but node.type is JsonNodeInt
-        expectThat(error.msg).isEqualTo("?")
+        expectThat(error.msg).isEqualTo("error at </items/0/price> - Expected Double but found JsonNodeInt(num=125, path=[items, 0, price])")
     }
 
 }
@@ -233,9 +232,6 @@ object JsonInvoice : JsonObj<Invoice> {
 }
 
 
-//todo:
-// checking parsing error with the position (add parent and path)
-// JProp<T?> would work instead of JPropOp?
 
 
 fun <T : Any> Outcome<*, T>.shouldSucceed(): T =

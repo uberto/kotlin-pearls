@@ -10,7 +10,7 @@ import kotlin.reflect.KProperty
 
 sealed class AbstractJsonNode {
 
-    var path: String = ""
+    abstract val path: List<String>
 
     fun asText(): Outcome<JsonError, String> =
         when (this) {
@@ -21,53 +21,57 @@ sealed class AbstractJsonNode {
     fun asDouble(): Outcome<JsonError, Double> =
         when (this) {
             is JsonNodeDouble -> this.num.asSuccess()
-            else -> JsonError(this, "Expected Double but node.type is ${this::class.simpleName}").asFailure()
+            else -> JsonError(this, "Expected Double but found $this").asFailure()
         }
 
     fun asInt(): Outcome<JsonError, Int> =
         when (this) {
             is JsonNodeInt -> this.num.asSuccess()
-            else -> JsonError(this, "Expected Int but node.type is ${this::class.simpleName}").asFailure()
+            else -> JsonError(this, "Expected Int but found $this").asFailure()
         }
 
     fun asBoolean(): Outcome<JsonError, Boolean> =
         when (this) {
             is JsonNodeBoolean -> this.value.asSuccess()
-            else -> JsonError(this, "Expected Boolean but node.type is ${this::class}").asFailure()
+            else -> JsonError(this, "Expected Boolean but found $this").asFailure()
         }
 
     fun <T> asObject(f: JsonNodeObject.() -> Outcome<JsonError, T>): Outcome<JsonError, T> =
         when (this) {
             is JsonNodeObject -> f(this)
-            else -> JsonError(this, "Expected Object but node.type is ${this::class}").asFailure()
+            else -> JsonError(this, "Expected Object but found $this").asFailure()
         }
 
     fun asArray(): Outcome<JsonError, List<AbstractJsonNode>> =
         when (this) {
             is JsonNodeArray -> (this.values).asSuccess()
-            else -> JsonError(this, "Expected Array but node.type is ${this::class}").asFailure()
+            else -> JsonError(this, "Expected Array but found $this").asFailure()
         }
-    //todo null
+
+    fun asNull(): Outcome<JsonError, Any?> =
+        when (this) {
+            is JsonNodeNull -> null.asSuccess()
+            else -> JsonError(this, "Expected Null but found $this").asFailure()
+        }
 
 
 }
 
-data class JsonNodeString(val text: String) : AbstractJsonNode()
-data class JsonNodeInt(val num: Int) : AbstractJsonNode()
-data class JsonNodeDouble(val num: Double) : AbstractJsonNode()
-data class JsonNodeBoolean(val value: Boolean) : AbstractJsonNode()
-data class JsonNodeArray(val values: List<AbstractJsonNode>) : AbstractJsonNode()
-data class JsonNodeObject(val fieldMap: Map<String, AbstractJsonNode>) : AbstractJsonNode() {
+data class JsonNodeNull(override val path: List<String> = emptyList()) : AbstractJsonNode()
+data class JsonNodeBoolean(val value: Boolean, override val path: List<String> = emptyList()) : AbstractJsonNode()
+data class JsonNodeInt(val num: Int, override val path: List<String> = emptyList()) : AbstractJsonNode()
+data class JsonNodeDouble(val num: Double, override val path: List<String> = emptyList()) : AbstractJsonNode()
+data class JsonNodeString(val text: String, override val path: List<String> = emptyList()) : AbstractJsonNode()
+data class JsonNodeArray(val values: List<AbstractJsonNode>, override val path: List<String> = emptyList()) : AbstractJsonNode()
+
+data class JsonNodeObject(val fieldMap: Map<String, AbstractJsonNode>, override val path: List<String> = emptyList()) : AbstractJsonNode() {
     fun <T : Any> JsonProp<T>.get(): Outcome<JsonError, T> = getFrom(this@JsonNodeObject)
     fun <T : Any> JsonPropOp<T>.get(): Outcome<JsonError, T?> = getFrom(this@JsonNodeObject)
 }
 
-object JsonNodeNull : AbstractJsonNode()
-
-
 data class JsonError(val node: AbstractJsonNode?, val reason: String) : OutcomeError {
-    val location = node?.path ?: "parsing"
-    override val msg = "error at $location ${node?.toString().orEmpty()} - $reason"
+    val location = node?.path?.joinToString(separator = "/", prefix = "</", postfix = ">") ?: "parsing"
+    override val msg = "error at $location - $reason"
 }
 
 interface JsonF<T> {
@@ -127,9 +131,9 @@ data class JsonArrayNode<T : Any>(val helper: JsonF<T>) : JsonF<List<T>> {
         node.asArray().bind { nodes -> nodes.map { n: AbstractJsonNode -> f(n) }.sequence() }
 }
 
-
 fun writeObjNode(vararg fields: Pair<String, AbstractJsonNode>?): JsonNodeObject =
-    JsonNodeObject(fields.filterNotNull().toMap())
+    JsonNodeObject(
+        fields.filterNotNull().toMap())
 
 
 infix fun <P1 : Any, P2 : Any, R : Any> (Function2<P1, P2, R>).`=`(o: Outcome<JsonError, P1>): Outcome<JsonError, Function1<P2, R>> =
@@ -163,7 +167,6 @@ data class JsonPropOp<T : Any>(val propName: String, val jf: JsonF<T>) {
         value?.let {
             propName to jf.toJson(it)
         }
-
 }
 
 
@@ -188,23 +191,23 @@ class JFieldOptional<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<J
 fun klaxonConvert(json: String): Outcome<JsonError, JsonNodeObject> =
     Outcome.tryThis { Parser.default().parse(StringBuilder(json)) as JsonObject }
         .mapFailure { JsonError(null, it.msg) }
-        .bind { fromKlaxon(it.map) }
+        .bind { fromKlaxon(it.map, emptyList()) }
 
-fun fromKlaxon(map: MutableMap<String, Any?>): Outcome<JsonError, JsonNodeObject> =
+fun fromKlaxon( map: MutableMap<String, Any?>, path: List<String>): Outcome<JsonError, JsonNodeObject> =
     map.entries.mapNotNull { entry ->
         entry.value?.let {
-            entry.key to valueToNode(it).onFailure { return it.asFailure() }
+            entry.key to valueToNode( it, path + entry.key).onFailure { return it.asFailure() }
         }
-    }.toMap().let(::JsonNodeObject).asSuccess()
+    }.toMap().let { fieldMap -> JsonNodeObject(fieldMap, path) }.asSuccess()
 
-private fun valueToNode(value: Any): Outcome<JsonError, AbstractJsonNode> {
+private fun valueToNode(value: Any, path: List<String>): Outcome<JsonError, AbstractJsonNode> {
     return when (value) {
-        is Int -> JsonNodeInt(value).asSuccess()
-        is Double -> JsonNodeDouble(value).asSuccess()
-        is String -> JsonNodeString(value).asSuccess()
-        is Boolean -> JsonNodeBoolean(value).asSuccess()
-        is JsonObject -> fromKlaxon(value.map)
-        is JsonArray<*> -> JsonNodeArray( value.value.filterNotNull().map {e -> valueToNode(e).onFailure { return it.asFailure() } } ).asSuccess()
+        is Int -> JsonNodeInt(value, path).asSuccess()
+        is Double -> JsonNodeDouble(value, path).asSuccess()
+        is String -> JsonNodeString(value, path).asSuccess()
+        is Boolean -> JsonNodeBoolean(value, path).asSuccess()
+        is JsonObject -> fromKlaxon(value.map, path)
+        is JsonArray<*> -> JsonNodeArray( value.value.filterNotNull().mapIndexed { i,e -> valueToNode(e, path + "$i").onFailure { return it.asFailure() } } ).asSuccess()
         else -> JsonError(null, "type ${value::class} impossible to map! $value" ).asFailure()
     }
 }
@@ -222,7 +225,7 @@ private fun nodeToValue(node: AbstractJsonNode): Any? {
         is JsonNodeDouble -> node.num
         is JsonNodeArray -> node.values.map(::nodeToValue)
         is JsonNodeObject -> toKlaxon(node)
-        JsonNodeNull -> null
+        is JsonNodeNull -> null
     }
 }
 
