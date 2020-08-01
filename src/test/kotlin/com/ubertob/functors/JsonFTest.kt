@@ -62,7 +62,7 @@ class JsonFTest {
     @Test
     fun `json array of Customers`() {
 
-        val jsonUserArray = JsonArray(JsonCustomer)
+        val jsonUserArray = JsonArrayNode(JsonCustomer)
 
         val expected = listOf(
             Customer(1, "Adam"),
@@ -76,19 +76,6 @@ class JsonFTest {
 
         expectThat(actual).isEqualTo(expected)
     }
-
-    @Test
-    fun `Json with objects inside and back`() {
-
-        val ann = Customer(1, "ann")
-        val expected = Invoice(1001, true, ann, listOf("a", "b", "c"), 123.45)
-        val json = JsonInvoice.toJson(expected)
-
-        val actual = JsonInvoice.from(json).shouldSucceed()
-
-        expectThat(actual).isEqualTo(expected)
-    }
-
 
     @Test
     fun `Json with nullable and back`() {
@@ -105,6 +92,19 @@ class JsonFTest {
             that(actualToothpaste).isEqualTo(toothpaste)
             that(actualOffer).isEqualTo(offer)
         }
+    }
+
+
+    @Test
+    fun `Json with objects inside and back`() {
+
+        val ann = Customer(1, "ann")
+        val expected = Invoice(1001, true, ann, listOf("a", "b", "c"), 123.45)
+        val json = JsonInvoice.toJson(expected)
+
+        val actual = JsonInvoice.from(json).shouldSucceed()
+
+        expectThat(actual).isEqualTo(expected)
     }
 
 
@@ -140,6 +140,22 @@ class JsonFTest {
         expectThat(actualOffer).isEqualTo(offer)
     }
 
+    @Test
+    fun `JsonString Invoice and back`() {
+
+
+
+        val ann = Customer(1, "ann")
+        val expected = Invoice(1001, true, ann, listOf("a", "b", "c"), 123.45)
+        val json = toJsonString(expected, JsonInvoice).shouldSucceed()
+
+        println(json)
+
+        val actual = fromJsonString(json, JsonInvoice).shouldSucceed()
+
+        expectThat(actual).isEqualTo(expected)
+    }
+
 }
 
 data class Customer(val id: Int, val name: String)
@@ -162,9 +178,9 @@ data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val it
 
 object JsonInvoice : JsonObj<Invoice> {
     val id by JField(JsonInt)
-    val vat by JField(JsonBoolean)
+    val vat = JsonProp("vat-to-pay", JsonBoolean)
     val customer by JField(JsonCustomer)
-    val items by JField(JsonArray(JsonString))
+    val items by JField(JsonArrayNode(JsonString))
     val total by JField(JsonDouble)
 
 
@@ -202,8 +218,8 @@ object JsonProduct : JsonObj<Product> {
 
 
 //todo:
-// arrays
 // checking parsing error with the position (add parent and path)
+// JProp<T?> would work instead of JPropOp?
 
 
 fun <T : Any> Outcome<*, T>.shouldSucceed(): T =
