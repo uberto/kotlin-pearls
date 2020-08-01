@@ -66,7 +66,7 @@ data class JsonNodeArray(val values: List<AbstractJsonNode>, override val path: 
 
 data class JsonNodeObject(val fieldMap: Map<String, AbstractJsonNode>, override val path: List<String> = emptyList()) : AbstractJsonNode() {
     fun <T : Any> JsonProp<T>.get(): Outcome<JsonError, T> = getFrom(this@JsonNodeObject)
-    fun <T : Any> JsonPropOp<T>.get(): Outcome<JsonError, T?> = getFrom(this@JsonNodeObject)
+    fun <T : Any> JsonPropOptional<T>.get(): Outcome<JsonError, T?> = getFrom(this@JsonNodeObject)
 }
 
 data class JsonError(val node: AbstractJsonNode?, val reason: String) : OutcomeError {
@@ -74,12 +74,12 @@ data class JsonError(val node: AbstractJsonNode?, val reason: String) : OutcomeE
     override val msg = "error at $location - $reason"
 }
 
-interface JsonF<T> {
+interface JsonFunctors<T: Any> {
     fun from(node: AbstractJsonNode): Outcome<JsonError, T>
     fun toJson(value: T): AbstractJsonNode
 }
 
-interface JsonObj<T> : JsonF<T> {
+interface JAny<T: Any> : JsonFunctors<T> {
 
     override fun from(node: AbstractJsonNode): Outcome<JsonError, T> = node.asObject { deserialize() }
 
@@ -90,33 +90,33 @@ interface JsonObj<T> : JsonF<T> {
     fun serialize(value: T): JsonNodeObject
 }
 
-object JsonBoolean : JsonF<Boolean> {
+object JBoolean : JsonFunctors<Boolean> {
     override fun from(node: AbstractJsonNode): Outcome<JsonError, Boolean> = node.asBoolean()
 
     override fun toJson(value: Boolean): AbstractJsonNode = JsonNodeBoolean(value)
 
 }
 
-object JsonString : JsonF<String> {
+object JString : JsonFunctors<String> {
     override fun from(node: AbstractJsonNode): Outcome<JsonError, String> = node.asText()
 
     override fun toJson(value: String): AbstractJsonNode = JsonNodeString(value)
 
 }
 
-object JsonInt : JsonF<Int> {
+object JInt : JsonFunctors<Int> {
     override fun from(node: AbstractJsonNode): Outcome<JsonError, Int> = node.asInt()
 
     override fun toJson(value: Int): AbstractJsonNode = JsonNodeInt(value)
 }
 
-object JsonDouble : JsonF<Double> {
+object JDouble : JsonFunctors<Double> {
     override fun from(node: AbstractJsonNode): Outcome<JsonError, Double> = node.asDouble()
 
     override fun toJson(value: Double): AbstractJsonNode = JsonNodeDouble(value)
 }
 
-data class JsonArrayNode<T : Any>(val helper: JsonF<T>) : JsonF<List<T>> {
+data class JArray<T : Any>(val helper: JsonFunctors<T>) : JsonFunctors<List<T>> {
     override fun from(node: AbstractJsonNode): Outcome<JsonError, List<T>> = mapFrom(node, helper::from)
 
     override fun toJson(value: List<T>): AbstractJsonNode = mapToJson(value, helper::toJson)
@@ -143,7 +143,7 @@ infix fun <P1 : Any, R : Any> (Outcome<JsonError, Function1<P1, R>>).`+`(o: Outc
     o.flatMap { p1: P1 -> this.map { it(p1) } }
 
 
-data class JsonProp<T : Any>(val propName: String, val jf: JsonF<T>) {
+data class JsonProp<T : Any>(val propName: String, val jf: JsonFunctors<T>) {
 
     fun getFrom(node: JsonNodeObject): Outcome<JsonError, T> =
         node.fieldMap[propName]
@@ -156,7 +156,9 @@ data class JsonProp<T : Any>(val propName: String, val jf: JsonF<T>) {
 
 }
 
-data class JsonPropOp<T : Any>(val propName: String, val jf: JsonF<T>) {
+
+//todo: would JProp<T?> would work instead of JsonPropOptional?
+data class JsonPropOptional<T : Any>(val propName: String, val jf: JsonFunctors<T>) {
 
     fun getFrom(node: JsonNodeObject): Outcome<JsonError, T?> =
         node.fieldMap[propName]
@@ -170,17 +172,17 @@ data class JsonPropOp<T : Any>(val propName: String, val jf: JsonF<T>) {
 }
 
 
-class JField<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<JsonF<*>, JsonProp<T>> {
+class JField<T : Any>(private val jsonFunctors: JsonFunctors<T>) : ReadOnlyProperty<JsonFunctors<*>, JsonProp<T>> {
 
-    override fun getValue(thisRef: JsonF<*>, property: KProperty<*>): JsonProp<T> =
-        JsonProp(property.name, jsonFSingleton)
+    override fun getValue(thisRef: JsonFunctors<*>, property: KProperty<*>): JsonProp<T> =
+        JsonProp(property.name, jsonFunctors)
 
 }
 
-class JFieldOptional<T : Any>(val jsonFSingleton: JsonF<T>) : ReadOnlyProperty<JsonF<*>, JsonPropOp<T>> {
+class JFieldOptional<T : Any>(private val jsonFunctors: JsonFunctors<T>) : ReadOnlyProperty<JsonFunctors<*>, JsonPropOptional<T>> {
 
-    override fun getValue(thisRef: JsonF<*>, property: KProperty<*>): JsonPropOp<T> =
-        JsonPropOp(property.name, jsonFSingleton)
+    override fun getValue(thisRef: JsonFunctors<*>, property: KProperty<*>): JsonPropOptional<T> =
+        JsonPropOptional(property.name, jsonFunctors)
 
 }
 
@@ -230,10 +232,10 @@ private fun nodeToValue(node: AbstractJsonNode): Any? {
 }
 
 
-fun <T> fromJsonString(json: String, conv: JsonObj<T>): Outcome<JsonError, T> =
+fun <T: Any> fromJsonString(json: String, conv: JAny<T>): Outcome<JsonError, T> =
     klaxonConvert(json)
         .bind { conv.from(it) }
 
-fun <T> toJsonString(value: T, conv: JsonObj<T>): Outcome<JsonError, String> = conv.serialize(value)
+fun <T: Any> toJsonString(value: T, conv: JAny<T>): Outcome<JsonError, String> = conv.serialize(value)
     .let { JsonObject(toKlaxon(it)).toJsonString().asSuccess() }
 

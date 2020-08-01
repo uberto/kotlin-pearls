@@ -14,9 +14,9 @@ class JsonFTest {
     fun `JsonNode String`() {
 
         val expected = "abc"
-        val json = JsonString.toJson(expected)
+        val json = JString.toJson(expected)
 
-        val actual = JsonString.from(json).shouldSucceed()
+        val actual = JString.from(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -26,9 +26,9 @@ class JsonFTest {
     fun `Json Double`() {
 
         val expected = 123.0
-        val json = JsonDouble.toJson(expected)
+        val json = JDouble.toJson(expected)
 
-        val actual = JsonDouble.from(json).shouldSucceed()
+        val actual = JDouble.from(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -37,9 +37,9 @@ class JsonFTest {
     fun `Json Int`() {
 
         val expected = 124
-        val json = JsonInt.toJson(expected)
+        val json = JInt.toJson(expected)
 
-        val actual = JsonInt.from(json).shouldSucceed()
+        val actual = JInt.from(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -59,7 +59,7 @@ class JsonFTest {
     @Test
     fun `json array of Customers`() {
 
-        val jsonUserArray = JsonArrayNode(JsonCustomer)
+        val jsonUserArray = JArray(JsonCustomer)
 
         val expected = listOf(
             Customer(1, "Adam"),
@@ -173,10 +173,10 @@ class JsonFTest {
 
 data class Customer(val id: Int, val name: String)
 
-object JsonCustomer : JsonObj<Customer> {
+object JsonCustomer : JAny<Customer> {
 
-    val id by JField(JsonInt)
-    val name by JField(JsonString)
+    val id by JField(JInt)
+    val name by JField(JString)
 
     override fun JsonNodeObject.deserialize(): Outcome<JsonError, Customer> =
         liftA2(::Customer, id.get(), name.get())
@@ -190,10 +190,10 @@ object JsonCustomer : JsonObj<Customer> {
 
 data class Product(val id: Int, val desc: String, val price: Double?)
 
-object JsonProduct : JsonObj<Product> {
-    val id by JField(JsonInt)
-    val desc by JField(JsonString)
-    val price by JFieldOptional(JsonDouble)
+object JsonProduct : JAny<Product> {
+    val id by JField(JInt)
+    val desc by JField(JString)
+    val price by JFieldOptional(JDouble)
 
 
     override fun JsonNodeObject.deserialize(): Outcome<JsonError, Product> =
@@ -211,12 +211,12 @@ object JsonProduct : JsonObj<Product> {
 
 data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val items: List<Product>, val total: Double)
 
-object JsonInvoice : JsonObj<Invoice> {
-    val id by JField(JsonInt)
-    val vat = JsonProp("vat-to-pay", JsonBoolean)
+object JsonInvoice : JAny<Invoice> {
+    val id by JField(JInt)
+    val vat = JsonProp("vat-to-pay", JBoolean)
     val customer by JField(JsonCustomer)
-    val items by JField(JsonArrayNode(JsonProduct))
-    val total by JField(JsonDouble)
+    val items by JField(JArray(JsonProduct))
+    val total by JField(JDouble)
 
 
     override fun JsonNodeObject.deserialize(): Outcome<JsonError, Invoice> =
