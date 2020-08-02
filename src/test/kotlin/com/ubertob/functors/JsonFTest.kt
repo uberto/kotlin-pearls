@@ -136,7 +136,7 @@ class JsonFTest {
         expectThat(actualToothpaste).isEqualTo(toothpaste)
         expectThat(actualOffer).isEqualTo(offer)
     }
-    val invoice = Invoice(1001, true, ann, listOf( toothpaste, offer), 123.45)
+    val invoice = Invoice(InvoiceId("1001"), true, ann, listOf( toothpaste, offer), 123.45)
 
 
     @Test
@@ -162,7 +162,7 @@ class JsonFTest {
 
     @Test
     fun `parsing wrong json gives us precise errors`(){
-        val jsonWithDifferentField = "{\"id\":1001,\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price\":125},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
+        val jsonWithDifferentField = "{\"id\":\"1001\",\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price\":125},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
 
         val error = fromJsonString(jsonWithDifferentField, JInvoice).shouldFail()
 
@@ -209,10 +209,13 @@ object JProduct : JAny<Product> {
 }
 
 
-data class Invoice(val id: Int, val vat: Boolean, val customer: Customer, val items: List<Product>, val total: Double)
+data class InvoiceId(override val raw: String): StringWrapper
+
+
+data class Invoice(val id: InvoiceId, val vat: Boolean, val customer: Customer, val items: List<Product>, val total: Double)
 
 object JInvoice : JAny<Invoice> {
-    val id by JField(JInt)
+    val id by JField(JStringWrapper(::InvoiceId))
     val vat = JsonProp("vat-to-pay", JBoolean)
     val customer by JField(JCustomer)
     val items by JField(JArray(JProduct))
@@ -230,6 +233,7 @@ object JInvoice : JAny<Invoice> {
         total.setTo(value.total)
     )
 }
+
 
 
 

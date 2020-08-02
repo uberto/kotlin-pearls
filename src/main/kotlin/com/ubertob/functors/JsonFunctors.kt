@@ -8,6 +8,11 @@ import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 
+interface StringWrapper {
+    val raw: String
+}
+
+
 sealed class AbstractJsonNode {
 
     abstract val path: List<String>
@@ -114,6 +119,15 @@ object JDouble : JsonFunctors<Double> {
     override fun from(node: AbstractJsonNode): Outcome<JsonError, Double> = node.asDouble()
 
     override fun toJson(value: Double): AbstractJsonNode = JsonNodeDouble(value)
+}
+
+data class JStringWrapper<T : StringWrapper>(val cons: (String) -> T) : JsonFunctors<T>{
+
+    override fun from(node: AbstractJsonNode): Outcome<JsonError, T> =
+        node.asText().map(cons)
+
+    override fun toJson(value: T): AbstractJsonNode = JsonNodeString(value.raw)
+
 }
 
 data class JArray<T : Any>(val helper: JsonFunctors<T>) : JsonFunctors<List<T>> {
