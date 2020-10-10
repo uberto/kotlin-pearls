@@ -14,9 +14,9 @@ class JsonFTest {
     fun `JsonNode String`() {
 
         val expected = "abc"
-        val json = JString.toJson(expected)
+        val json = JString.pure(expected)
 
-        val actual = JString.from(json).shouldSucceed()
+        val actual = JString.extract(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -26,9 +26,9 @@ class JsonFTest {
     fun `Json Double`() {
 
         val expected = 123.0
-        val json = JDouble.toJson(expected)
+        val json = JDouble.pure(expected)
 
-        val actual = JDouble.from(json).shouldSucceed()
+        val actual = JDouble.extract(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -37,9 +37,9 @@ class JsonFTest {
     fun `Json Int`() {
 
         val expected = 124
-        val json = JInt.toJson(expected)
+        val json = JInt.pure(expected)
 
-        val actual = JInt.from(json).shouldSucceed()
+        val actual = JInt.extract(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -48,9 +48,9 @@ class JsonFTest {
     fun `Json Customer and back`() {
 
         val expected = Customer(123, "abc")
-        val json = JCustomer.toJson(expected)
+        val json = JCustomer.pure(expected)
 
-        val actual = JCustomer.from(json).shouldSucceed()
+        val actual = JCustomer.extract(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -67,9 +67,9 @@ class JsonFTest {
             Customer(3, "Carol")
         )
 
-        val node = jsonUserArray.toJson(expected)
+        val node = jsonUserArray.pure(expected)
 
-        val actual = jsonUserArray.from(node).shouldSucceed()
+        val actual = jsonUserArray.extract(node).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -79,11 +79,11 @@ class JsonFTest {
 
         val toothpaste = Product(1001, "toothpaste \"whiter than white\"", 12.34)
         val offer = Product(10001, "special offer", null)
-        val toothpasteJson = JProduct.toJson(toothpaste)
-        val offerJson = JProduct.toJson(offer)
+        val toothpasteJson = JProduct.pure(toothpaste)
+        val offerJson = JProduct.pure(offer)
 
-        val actualToothpaste = JProduct.from(toothpasteJson).shouldSucceed()
-        val actualOffer = JProduct.from(offerJson).shouldSucceed()
+        val actualToothpaste = JProduct.extract(toothpasteJson).shouldSucceed()
+        val actualOffer = JProduct.extract(offerJson).shouldSucceed()
 
         expect {
             that(actualToothpaste).isEqualTo(toothpaste)
@@ -96,9 +96,9 @@ class JsonFTest {
     @Test
     fun `Json with objects inside and back`() {
 
-        val json = JInvoice.toJson(invoice)
+        val json = JInvoice.pure(invoice)
 
-        val actual = JInvoice.from(json).shouldSucceed()
+        val actual = JInvoice.extract(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(invoice)
     }
@@ -136,7 +136,8 @@ class JsonFTest {
         expectThat(actualToothpaste).isEqualTo(toothpaste)
         expectThat(actualOffer).isEqualTo(offer)
     }
-    val invoice = Invoice(InvoiceId("1001"), true, ann, listOf( toothpaste, offer), 123.45)
+
+    val invoice = Invoice(InvoiceId("1001"), true, ann, listOf(toothpaste, offer), 123.45)
 
 
     @Test
@@ -152,8 +153,9 @@ class JsonFTest {
     }
 
     @Test
-    fun `parsing illegal json gives us precise errors`(){
-        val illegalJson = "{\"id\":1001,\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price:12.34},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
+    fun `parsing illegal json gives us precise errors`() {
+        val illegalJson =
+            "{\"id\":1001,\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price:12.34},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
 
         val error = fromJsonString(illegalJson, JInvoice).shouldFail()
 
@@ -161,8 +163,9 @@ class JsonFTest {
     }
 
     @Test
-    fun `parsing wrong json gives us precise errors`(){
-        val jsonWithDifferentField = "{\"id\":\"1001\",\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price\":125},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
+    fun `parsing wrong json gives us precise errors`() {
+        val jsonWithDifferentField =
+            "{\"id\":\"1001\",\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price\":125},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
 
         val error = fromJsonString(jsonWithDifferentField, JInvoice).shouldFail()
 
@@ -181,9 +184,9 @@ object JCustomer : JAny<Customer> {
     override fun JsonNodeObject.deserialize(): Outcome<JsonError, Customer> =
         liftA2(::Customer, id.get(), name.get())
 
-    override fun serialize(value: Customer) = writeObjNode(
-        id.setTo(value.id),
-        name.setTo(value.name)
+    override fun serialize(value: Customer) = foldObjNode(
+        id.setter(value.id),
+        name.setter(value.name)
     )
 }
 
@@ -200,23 +203,29 @@ object JProduct : JAny<Product> {
         liftA3(::Product, id.get(), desc.get(), price.get())
 
     override fun serialize(value: Product): JsonNodeObject =
-        writeObjNode(
-            id.setTo(value.id),
-            desc.setTo(value.desc),
-            price.setTo(value.price)
+        foldObjNode(
+            id.setter(value.id),
+            desc.setter(value.desc),
+            price.setter(value.price)
         )
 
 }
 
 
-data class InvoiceId(override val raw: String): StringWrapper
+data class InvoiceId(override val raw: String) : StringWrapper
 
 
-data class Invoice(val id: InvoiceId, val vat: Boolean, val customer: Customer, val items: List<Product>, val total: Double)
+data class Invoice(
+    val id: InvoiceId,
+    val vat: Boolean,
+    val customer: Customer,
+    val items: List<Product>,
+    val total: Double
+)
 
 object JInvoice : JAny<Invoice> {
     val id by JField(JStringWrapper(::InvoiceId))
-    val vat = JsonProp("vat-to-pay", JBoolean)
+    val vat = JsonPropMandatory("vat-to-pay", JBoolean)
     val customer by JField(JCustomer)
     val items by JField(JArray(JProduct))
     val total by JField(JDouble)
@@ -225,16 +234,14 @@ object JInvoice : JAny<Invoice> {
     override fun JsonNodeObject.deserialize(): Outcome<JsonError, Invoice> =
         liftA5(::Invoice, id.get(), vat.get(), customer.get(), items.get(), total.get())
 
-    override fun serialize(value: Invoice): JsonNodeObject = writeObjNode(
-        id.setTo(value.id),
-        vat.setTo(value.vat),
-        customer.setTo(value.customer),
-        items.setTo(value.items),
-        total.setTo(value.total)
+    override fun serialize(value: Invoice): JsonNodeObject = foldObjNode(
+        id.setter(value.id),
+        vat.setter(value.vat),
+        customer.setter(value.customer),
+        items.setter(value.items),
+        total.setter(value.total)
     )
 }
-
-
 
 
 fun <T : Any> Outcome<*, T>.shouldSucceed(): T =
