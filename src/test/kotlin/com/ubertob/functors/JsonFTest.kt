@@ -107,6 +107,19 @@ class JsonFTest {
 
 
     @Test
+    fun `Customer serialize and deserialize`() {
+
+        val customer = Customer(123, "abc")
+        val jsonNodeObject =  JCustomer.serialize(customer)
+
+        println(jsonNodeObject)
+
+        val actual = JCustomer.deserialize(jsonNodeObject).shouldSucceed()
+
+        expectThat(actual).isEqualTo(customer)
+    }
+
+    @Test
     fun `JsonString Customer and back`() {
 
         val expected = Customer(123, "abc")
@@ -244,3 +257,10 @@ fun <T : Any> Outcome<*, T>.shouldSucceed(): T =
 
 fun <E : OutcomeError> Outcome<E, *>.shouldFail(): E =
     this.fold({ it }, { fail("Should have failed but was $it") })
+
+
+//todo
+// add pre-check for multiple failures in parsing
+// add test for multiple reuse
+// add tests for concurrency reuse
+// add test for different kind of failures
