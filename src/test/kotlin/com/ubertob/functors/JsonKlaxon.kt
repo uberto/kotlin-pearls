@@ -5,7 +5,6 @@ import com.beust.klaxon.JsonArray
 import com.beust.klaxon.JsonObject
 import com.beust.klaxon.Parser
 import com.ubertob.outcome.*
-import com.ubertob.unitnothingany.map
 
 //----klaxon part
 
@@ -48,14 +47,15 @@ private fun nodeToValue(node: AbstractJsonNode): Any? {
         is JsonNodeArray -> node.values.map(::nodeToValue)
         is JsonNodeObject -> toKlaxon(node)
         is JsonNodeNull -> null
+        is JsonNodeLong -> node.num
     }
 }
 
 
-fun <T: Any> fromJsonString(json: String, conv: JAny<T>): Outcome<JsonError, T> =
+fun <T: Any> fromJsonString(json: String, conv: JProtocol<T>): Outcome<JsonError, T> =
     klaxonConvert(json)
         .bind { conv.extract(it) }
 
-fun <T: Any> toJsonString(value: T, conv: JAny<T>): Outcome<JsonError, String> = conv.serialize(value)
+fun <T: Any> toJsonString(value: T, conv: JProtocol<T>): Outcome<JsonError, String> = conv.serialize(value)
     .let { JsonObject(toKlaxon(it)).toJsonString().asSuccess() }
 

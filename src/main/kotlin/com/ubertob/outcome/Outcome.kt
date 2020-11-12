@@ -1,5 +1,7 @@
 package com.ubertob.outcome
 
+import java.lang.RuntimeException
+
 
 sealed class Outcome<out E : OutcomeError, out T> {
 
@@ -21,6 +23,11 @@ sealed class Outcome<out E : OutcomeError, out T> {
             is Failure -> onErr(this.error)
         }
 
+    fun orThrow(block: (E) -> RuntimeException): T =
+        when (this) {
+            is Success -> value
+            is Failure -> throw block(error)
+        }
 
     abstract operator fun iterator(): Iterator<T>
 
