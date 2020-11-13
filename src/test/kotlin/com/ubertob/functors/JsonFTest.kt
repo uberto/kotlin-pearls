@@ -241,8 +241,8 @@ data class Customer(val id: Int, val name: String)
 
 object JCustomer : JProtocol<Customer>() {
 
-    val id by JField(JInt, Customer::id)
-    val name by JField(JString, Customer::name)
+    val id by JField(Customer::id, JInt)
+    val name by JField(Customer::name, JString)
 
     override fun JsonNodeObject.tryDeserialize() =
         Customer(
@@ -256,10 +256,10 @@ data class Product(val id: Int, val shortDesc: String, val longDesc: String, val
 
 object JProduct : JProtocol<Product>() {
 
-    val id by JField(JInt, Product::id)
-    val long_description by JField(JString, Product::longDesc)
-    val short_desc by JField(JString, Product::shortDesc)
-    val price by JFieldMaybe(JDouble, Product::price)
+    val id by JField(Product::id, JInt)
+    val long_description by JField(Product::longDesc, JString)
+    val short_desc by JField(Product::shortDesc, JString)
+    val price by JFieldMaybe(Product::price, JDouble)
 
     override fun JsonNodeObject.tryDeserialize() =
         Product(
@@ -284,11 +284,11 @@ data class Invoice(
 )
 
 object JInvoice : JProtocol<Invoice>() {
-    val id by JField(JStringWrapper(::InvoiceId), Invoice::id)
-    val vat by JField( JBoolean, Invoice::vat, jsonFieldName = "vat-to-pay")
-    val customer by JField(JCustomer, Invoice::customer)
-    val items by JField(JArray(JProduct), Invoice::items)
-    val total by JField(JDouble, Invoice::total)
+    val id by JField(Invoice::id, JStringWrapper(::InvoiceId))
+    val vat by JField(Invoice::vat, JBoolean, jsonFieldName = "vat-to-pay")
+    val customer by JField(Invoice::customer, JCustomer)
+    val items by JField(Invoice::items, JArray(JProduct))
+    val total by JField(Invoice::total, JDouble)
 
     override fun JsonNodeObject.tryDeserialize(): Invoice =
         Invoice(

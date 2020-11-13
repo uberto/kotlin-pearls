@@ -271,8 +271,8 @@ sealed class JFieldBase<T, PT : Any>
 }
 
 class JField<T : Any, PT : Any>(
-    private val jsonAdjoint: JsonAdjoint<T>,
     override val binder: (PT) -> T,
+    private val jsonAdjoint: JsonAdjoint<T>,
     private val jsonFieldName: String? = null
 ) : JFieldBase<T, PT>() {
 
@@ -282,8 +282,8 @@ class JField<T : Any, PT : Any>(
 }
 
 class JFieldMaybe<T : Any, PT : Any>(
-    private val jsonAdjoint: JsonAdjoint<T>,
     override val binder: (PT) -> T?,
+    private val jsonAdjoint: JsonAdjoint<T>,
     private val jsonFieldName: String? = null
 ) : JFieldBase<T?, PT>() {
 
