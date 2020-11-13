@@ -58,6 +58,6 @@ fun <T : Any> fromJsonString(json: String, conv: JProtocol<T>): Outcome<JsonErro
     klaxonConvert(json)
         .bind { conv.deserialize(it) }
 
-fun <T : Any> toJsonString(value: T, conv: JProtocol<T>) =
+fun <T : Any> toJsonString(value: T, conv: JProtocol<T>): String =
     JsonObject(toKlaxon(conv.serialize(value))).toJsonString()
 

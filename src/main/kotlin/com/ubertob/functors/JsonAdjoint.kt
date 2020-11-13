@@ -132,7 +132,12 @@ abstract class JProtocol<T : Any> : JsonAdjoint<T> {
     fun deserialize(from: JsonNodeObject): Outcome<JsonError, T> =
         tryThis {
             from.tryDeserialize() ?: throw JsonParsingException( JsonError(from,"tryDeserialize returned null!"))
-        }.mapFailure { JsonError(from, it.msg) }
+        }.mapFailure { throwableError ->
+            when (throwableError.t){
+              is JsonParsingException -> throwableError.t.error // keep path info
+              else -> JsonError(from, throwableError.msg)
+            }
+        }
 
     fun serialize(value: T): JsonNodeObject =
         nodeWriters.get()

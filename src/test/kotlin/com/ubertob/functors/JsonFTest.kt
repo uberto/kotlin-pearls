@@ -174,17 +174,67 @@ class JsonFTest {
     }
 
     @Test
-    fun `parsing wrong json gives us precise errors`() {
+    fun `parsing json without a field return precise errors`() {
         val jsonWithDifferentField =
    """
-       {"id":"1001","vat-to-pay":true,"customer":{"id":1,"name":"ann"},"items":[{"id":1001,"desc":"toothpaste \"whiter than white\"","price":125},{"id":10001,"desc":"special offer"}],"total":123.45}
-   """.trimIndent()
+ {
+  "id": "1001",
+  "vat-to-pay": true,
+  "customer": {
+    "id": 1,
+    "name": "ann"
+  },
+  "items": [
+    {
+      "id": 1001,
+      "short_desc": "toothpaste",
+      "long_description": "toothpaste \"whiter than white\"",
+      "price": 125
+    },
+    {
+      "id": 10001,
+      "short_desc": "special offer"
+    }
+  ],
+  "total": 123.45
+}  """.trimIndent()
 
         val error = fromJsonString(jsonWithDifferentField, JInvoice).shouldFail()
 
-        expectThat(error.msg).isEqualTo("error at </items/0/price> - Expected Double but found JsonNodeInt(num=125, path=[items, 0, price])")
+        expectThat(error.msg).isEqualTo("error at </items/1> - Not found long_description")
     }
 
+
+    @Test
+    fun `parsing json with different type of fields return precise errors`() {
+        val jsonWithDifferentField =
+            """
+ {
+  "id": "1001",
+  "vat-to-pay": true,
+  "customer": {
+    "id": 1,
+    "name": "ann"
+  },
+  "items": [
+    {
+      "id": 1001,
+      "short_desc": "toothpaste",
+      "long_description": "toothpaste \"whiter than white\"",
+      "price": "125"
+    },
+    {
+      "id": 10001,
+      "short_desc": "special offer"
+    }
+  ],
+  "total": 123.45
+}  """.trimIndent()
+
+        val error = fromJsonString(jsonWithDifferentField, JInvoice).shouldFail()
+
+        expectThat(error.msg).isEqualTo("error at </items/0/price> - Expected Double but found JsonNodeString(text=125, path=[items, 0, price])")
+    }
 }
 
 data class Customer(val id: Int, val name: String)
