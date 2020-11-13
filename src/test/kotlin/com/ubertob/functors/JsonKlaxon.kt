@@ -14,10 +14,10 @@ fun klaxonConvert(json: String): Outcome<JsonError, JsonNodeObject> =
         .mapFailure { JsonError(null, it.msg) }
         .bind { fromKlaxon(it.map, emptyList()) }
 
-fun fromKlaxon( map: MutableMap<String, Any?>, path: List<String>): Outcome<JsonError, JsonNodeObject> =
+fun fromKlaxon(map: MutableMap<String, Any?>, path: List<String>): Outcome<JsonError, JsonNodeObject> =
     map.entries.mapNotNull { entry ->
         entry.value?.let {
-            entry.key to valueToNode( it, path + entry.key).onFailure { return it.asFailure() }
+            entry.key to valueToNode(it, path + entry.key).onFailure { return it.asFailure() }
         }
     }.toMap().let { fieldMap -> JsonNodeObject(fieldMap, path) }.asSuccess()
 
@@ -28,8 +28,10 @@ private fun valueToNode(value: Any, path: List<String>): Outcome<JsonError, Abst
         is String -> JsonNodeString(value, path).asSuccess()
         is Boolean -> JsonNodeBoolean(value, path).asSuccess()
         is JsonObject -> fromKlaxon(value.map, path)
-        is JsonArray<*> -> JsonNodeArray( value.value.filterNotNull().mapIndexed { i, e -> valueToNode(e, path + "$i").onFailure { return it.asFailure() } } ).asSuccess()
-        else -> JsonError(null, "type ${value::class} impossible to map! $value" ).asFailure()
+        is JsonArray<*> -> JsonNodeArray(
+            value.value.filterNotNull()
+                .mapIndexed { i, e -> valueToNode(e, path + "$i").onFailure { return it.asFailure() } }).asSuccess()
+        else -> JsonError(null, "type ${value::class} impossible to map! $value").asFailure()
     }
 }
 
@@ -52,10 +54,10 @@ private fun nodeToValue(node: AbstractJsonNode): Any? {
 }
 
 
-fun <T: Any> fromJsonString(json: String, conv: JProtocol<T>): Outcome<JsonError, T> =
+fun <T : Any> fromJsonString(json: String, conv: JProtocol<T>): Outcome<JsonError, T> =
     klaxonConvert(json)
-        .bind { conv.extract(it) }
+        .bind { conv.deserialize(it) }
 
-fun <T: Any> toJsonString(value: T, conv: JProtocol<T>): Outcome<JsonError, String> = conv.serialize(value)
-    .let { JsonObject(toKlaxon(it)).toJsonString().asSuccess() }
+fun <T : Any> toJsonString(value: T, conv: JProtocol<T>) =
+    JsonObject(toKlaxon(conv.serialize(value))).toJsonString()
 

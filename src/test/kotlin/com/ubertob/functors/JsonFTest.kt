@@ -123,7 +123,7 @@ class JsonFTest {
     fun `JsonString Customer and back`() {
 
         val expected = Customer(123, "abc")
-        val json = toJsonString(expected, JCustomer).shouldSucceed()
+        val json = toJsonString(expected, JCustomer)
 
         println(json)
 
@@ -137,8 +137,8 @@ class JsonFTest {
     fun `JsonString Product and back`() {
 
 
-        val jsonToothpaste = toJsonString(toothpaste, JProduct).shouldSucceed()
-        val jsonOffer = toJsonString(offer, JProduct).shouldSucceed()
+        val jsonToothpaste = toJsonString(toothpaste, JProduct)
+        val jsonOffer = toJsonString(offer, JProduct)
 
         println(jsonToothpaste)
         println(jsonOffer)
@@ -156,9 +156,7 @@ class JsonFTest {
     @Test
     fun `JsonString Invoice and back`() {
 
-        val json = toJsonString(invoice, JInvoice).shouldSucceed()
-
-        println(json)
+        val json = toJsonString(invoice, JInvoice)
 
         val actual = fromJsonString(json, JInvoice).shouldSucceed()
 
@@ -178,7 +176,9 @@ class JsonFTest {
     @Test
     fun `parsing wrong json gives us precise errors`() {
         val jsonWithDifferentField =
-            "{\"id\":\"1001\",\"vat-to-pay\":true,\"customer\":{\"id\":1,\"name\":\"ann\"},\"items\":[{\"id\":1001,\"desc\":\"toothpaste \\\"whiter than white\\\"\",\"price\":125},{\"id\":10001,\"desc\":\"special offer\"}],\"total\":123.45}"
+   """
+       {"id":"1001","vat-to-pay":true,"customer":{"id":1,"name":"ann"},"items":[{"id":1001,"desc":"toothpaste \"whiter than white\"","price":125},{"id":10001,"desc":"special offer"}],"total":123.45}
+   """.trimIndent()
 
         val error = fromJsonString(jsonWithDifferentField, JInvoice).shouldFail()
 
