@@ -25,7 +25,7 @@ sealed class AbstractJsonNode {
     fun asDouble(): Outcome<JsonError, Double> =
         when (this) {
             is JsonNodeDouble -> this.num.asSuccess()
-            is JsonNodeLong ->  this.num.toDouble().asSuccess()
+            is JsonNodeLong -> this.num.toDouble().asSuccess()
             is JsonNodeInt -> this.num.toDouble().asSuccess()
             else -> JsonError(this, "Expected Double but found $this").asFailure()
         }
@@ -115,11 +115,11 @@ abstract class JProtocol<T : Any> : JsonAdjoint<T> {
     private val nodeWriters: AtomicReference<Set<NodeWriter<T>>> = AtomicReference(emptySet())
     private val nodeReaders: AtomicReference<Set<NodeReader<*>>> = AtomicReference(emptySet())
 
-    fun registerSetter(nodeWriter: NodeWriter<T>) {
+    internal fun registerSetter(nodeWriter: NodeWriter<T>) {
         nodeWriters.getAndUpdate { set -> set + nodeWriter }
     }
 
-    fun registerGetter(nodeReader: NodeReader<*>) {
+    internal fun registerGetter(nodeReader: NodeReader<*>) {
         nodeReaders.getAndUpdate { set -> set + nodeReader }
     }
 
@@ -131,11 +131,11 @@ abstract class JProtocol<T : Any> : JsonAdjoint<T> {
 
     fun deserialize(from: JsonNodeObject): Outcome<JsonError, T> =
         tryThis {
-            from.tryDeserialize() ?: throw JsonParsingException( JsonError(from,"tryDeserialize returned null!"))
+            from.tryDeserialize() ?: throw JsonParsingException(JsonError(from, "tryDeserialize returned null!"))
         }.mapFailure { throwableError ->
-            when (throwableError.t){
-              is JsonParsingException -> throwableError.t.error // keep path info
-              else -> JsonError(from, throwableError.msg)
+            when (throwableError.t) {
+                is JsonParsingException -> throwableError.t.error // keep path info
+                else -> JsonError(from, throwableError.msg)
             }
         }
 
@@ -254,54 +254,42 @@ data class JsonPropOptional<T : Any>(override val propName: String, val jf: Json
 sealed class JFieldBase<T, PT : Any>
     : ReadOnlyProperty<JProtocol<PT>, JsonProperty<T>> {
 
+    protected abstract val binder: (PT) -> T
+
+    protected abstract fun buildJsonProperty(property: KProperty<*>): JsonProperty<T>
+
+    operator fun provideDelegate(thisRef: JProtocol<PT>, prop: KProperty<*>): JFieldBase<T, PT> {
+        val jp = buildJsonProperty(prop)
+        thisRef.registerSetter { jno, obj -> jp.setter(binder(obj))(jno) }
+        thisRef.registerGetter { jno -> jp.getter(jno) }
+
+        return this
+    }
+
+    override fun getValue(thisRef: JProtocol<PT>, property: KProperty<*>): JsonProperty<T> =
+        buildJsonProperty(property)
 }
 
 class JField<T : Any, PT : Any>(
     private val jsonAdjoint: JsonAdjoint<T>,
-    private val binder: (PT) -> T,
+    override val binder: (PT) -> T,
     private val jsonFieldName: String? = null
 ) : JFieldBase<T, PT>() {
 
-    override fun getValue(thisRef: JProtocol<PT>, property: KProperty<*>): JsonPropMandatory<T> =
-        buildJsonProperty(property)
-
-    fun buildJsonProperty(property: KProperty<*>) =
+    override fun buildJsonProperty(property: KProperty<*>): JsonProperty<T> =
         JsonPropMandatory(jsonFieldName ?: property.name, jsonAdjoint)
 
-    operator fun provideDelegate(
-        thisRef: JProtocol<PT>,
-        prop: KProperty<*>
-    ): JFieldBase<T, PT> {
-        val jp = buildJsonProperty(prop)
-        thisRef.registerSetter { jno, obj -> jp.setter(binder(obj))(jno) }
-        thisRef.registerGetter { jno -> jp.getter(jno) }
-
-        return this
-    }
 }
 
 class JFieldMaybe<T : Any, PT : Any>(
     private val jsonAdjoint: JsonAdjoint<T>,
-    private val binder: (PT) -> T?,
+    override val binder: (PT) -> T?,
     private val jsonFieldName: String? = null
 ) : JFieldBase<T?, PT>() {
 
-    override fun getValue(thisRef: JProtocol<PT>, property: KProperty<*>): JsonPropOptional<T> =
-        buildJsonProperty(property)
-
-    fun buildJsonProperty(property: KProperty<*>) =
+    override fun buildJsonProperty(property: KProperty<*>): JsonProperty<T?> =
         JsonPropOptional(jsonFieldName ?: property.name, jsonAdjoint)
 
-    operator fun provideDelegate(
-        thisRef: JProtocol<PT>,
-        prop: KProperty<*>
-    ): JFieldBase<T?, PT> {
-        val jp = buildJsonProperty(prop)
-        thisRef.registerSetter { jno, obj -> jp.setter(binder(obj))(jno) }
-        thisRef.registerGetter { jno -> jp.getter(jno) }
-
-        return this
-    }
 }
 
 
