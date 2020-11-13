@@ -81,8 +81,6 @@ data class JsonNodeArray(val values: List<AbstractJsonNode>, override val path: 
 
 data class JsonNodeObject(val fieldMap: Map<String, AbstractJsonNode>, override val path: List<String> = emptyList()) :
     AbstractJsonNode() {
-    fun <T : Any> JsonPropMandatory<T>.get(): Outcome<JsonError, T> = getter(this@JsonNodeObject)
-    fun <T : Any> JsonPropOptional<T>.get(): Outcome<JsonError, T?> = getter(this@JsonNodeObject)
 
     operator fun <T> JsonProperty<T>.unaryPlus(): T =
         getter(this@JsonNodeObject)
@@ -92,7 +90,7 @@ data class JsonNodeObject(val fieldMap: Map<String, AbstractJsonNode>, override 
 
 data class JsonError(val node: AbstractJsonNode?, val reason: String) : OutcomeError {
     val location = node?.path?.joinToString(separator = "/", prefix = "</", postfix = ">") ?: "parsing"
-    override val msg = "error at $location - $reason"
+    override val msg = "error at $location reason: $reason"
 }
 
 typealias JsonOutcome<T> = Outcome<JsonError, T>

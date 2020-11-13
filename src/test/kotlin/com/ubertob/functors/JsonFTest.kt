@@ -170,7 +170,7 @@ class JsonFTest {
 
         val error = fromJsonString(illegalJson, JInvoice).shouldFail()
 
-        expectThat(error.msg).isEqualTo("error at parsing - Unexpected character at position 140: 'i' (ASCII: 105)'")
+        expectThat(error.msg).isEqualTo("error at parsing reason: Unexpected character at position 140: 'i' (ASCII: 105)'")
     }
 
     @Test
@@ -201,7 +201,7 @@ class JsonFTest {
 
         val error = fromJsonString(jsonWithDifferentField, JInvoice).shouldFail()
 
-        expectThat(error.msg).isEqualTo("error at </items/1> - Not found long_description")
+        expectThat(error.msg).isEqualTo("error at </items/1> reason: Not found long_description")
     }
 
 
@@ -233,7 +233,7 @@ class JsonFTest {
 
         val error = fromJsonString(jsonWithDifferentField, JInvoice).shouldFail()
 
-        expectThat(error.msg).isEqualTo("error at </items/0/price> - Expected Double but found JsonNodeString(text=125, path=[items, 0, price])")
+        expectThat(error.msg).isEqualTo("error at </items/0/price> reason: Expected Double but found JsonNodeString(text=125, path=[items, 0, price])")
     }
 }
 
