@@ -260,6 +260,7 @@ fun <E : OutcomeError> Outcome<E, *>.shouldFail(): E =
 
 
 //todo
+// add passing node path
 // add pre-check for multiple failures in parsing
 // add test for multiple reuse
 // add tests for concurrency reuse

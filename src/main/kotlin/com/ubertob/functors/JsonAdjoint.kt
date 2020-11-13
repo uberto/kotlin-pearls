@@ -25,6 +25,8 @@ sealed class AbstractJsonNode {
     fun asDouble(): Outcome<JsonError, Double> =
         when (this) {
             is JsonNodeDouble -> this.num.asSuccess()
+            is JsonNodeLong ->  this.num.toDouble().asSuccess()
+            is JsonNodeInt -> this.num.toDouble().asSuccess()
             else -> JsonError(this, "Expected Double but found $this").asFailure()
         }
 
@@ -37,6 +39,7 @@ sealed class AbstractJsonNode {
     fun asLong(): Outcome<JsonError, Long> =
         when (this) {
             is JsonNodeLong -> this.num.asSuccess()
+            is JsonNodeInt -> this.num.toLong().asSuccess()
             else -> JsonError(this, "Expected Long but found $this").asFailure()
         }
 
@@ -128,7 +131,7 @@ abstract class JProtocol<T : Any> : JsonAdjoint<T> {
 
     fun deserialize(from: JsonNodeObject): Outcome<JsonError, T> =
         tryThis {
-            from.tryDeserialize() ?: throw RuntimeException("constructor returning null!")
+            from.tryDeserialize() ?: throw JsonParsingException( JsonError(from,"tryDeserialize returned null!"))
         }.mapFailure { JsonError(from, it.msg) }
 
     fun serialize(value: T): JsonNodeObject =
