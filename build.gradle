@@ -15,7 +15,7 @@ repositories {
 
 
 wrapper {
-    gradleVersion = "6.3"
+    gradleVersion = "6.7"
 }
 
 dependencies {
@@ -26,7 +26,6 @@ dependencies {
     testImplementation 'com.beust:klaxon:5.0.1'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.4.2'
     testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.4.2'
-
 }
 
 

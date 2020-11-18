@@ -128,14 +128,39 @@ abstract class JProtocol<T : Any> : JsonAdjoint<T> {
     abstract fun JsonNodeObject.tryDeserialize(): T?
 
     fun deserialize(from: JsonNodeObject): Outcome<JsonError, T> =
-        tryThis {
-            from.tryDeserialize() ?: throw JsonParsingException(JsonError(from, "tryDeserialize returned null!"))
-        }.mapFailure { throwableError ->
-            when (throwableError.t) {
-                is JsonParsingException -> throwableError.t.error // keep path info
-                else -> JsonError(from, throwableError.msg)
+        composeFailures(nodeReaders.get(), from)
+            .bind {
+                tryThis {
+                    from.tryDeserialize() ?: throw JsonParsingException(
+                        JsonError(from, "tryDeserialize returned null!")
+                    )
+                }.mapFailure { throwableError ->
+                    when (throwableError.t) {
+                        is JsonParsingException -> throwableError.t.error // keep path info
+                        else -> JsonError(from, throwableError.msg)
+                    }
+                }
             }
-        }
+
+    private fun composeFailures(nodeReaders: Set<NodeReader<*>>, jsonNode: JsonNodeObject): JsonOutcome<Unit> =
+        nodeReaders
+            .fold(emptyList<JsonOutcome<*>>()) { acc, r -> acc + r(jsonNode) }
+            .mapNotNull {
+                when(it){
+                    is Success -> null
+                    is Failure -> it.error
+                } }
+            .let { errors ->
+                when {
+                    errors.isEmpty() -> Unit.asSuccess()
+                    errors.size == 1 -> errors[0].asFailure()
+                    else -> multipleErrors(jsonNode, errors).asFailure()
+                }
+            }
+
+    private fun multipleErrors(jsonNode: JsonNodeObject, errors: List<OutcomeError>): JsonError =
+        JsonError(jsonNode, errors.joinToString(prefix = "Multiple errors: "))
+
 
     fun serialize(value: T): JsonNodeObject =
         nodeWriters.get()
