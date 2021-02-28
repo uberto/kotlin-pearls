@@ -1,4 +1,4 @@
-package com.ubertob.namedCompanionObject
+package com.ubertob.companionObjects
 
 interface I1 : (String) -> Boolean {
     companion object
