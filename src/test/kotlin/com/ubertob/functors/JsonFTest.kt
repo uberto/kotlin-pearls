@@ -15,9 +15,9 @@ class JsonFTest {
     fun `JsonNode String`() {
 
         val expected = "abc"
-        val json = JString.build(expected)
+        val json = JString.toJson(expected)
 
-        val actual = JString.extract(json).shouldSucceed()
+        val actual = JString.fromJson(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -27,9 +27,9 @@ class JsonFTest {
     fun `Json Double`() {
 
         val expected = 123.0
-        val json = JDouble.build(expected)
+        val json = JDouble.toJson(expected)
 
-        val actual = JDouble.extract(json).shouldSucceed()
+        val actual = JDouble.fromJson(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -38,9 +38,9 @@ class JsonFTest {
     fun `Json Int`() {
 
         val expected = 124
-        val json = JInt.build(expected)
+        val json = JInt.toJson(expected)
 
-        val actual = JInt.extract(json).shouldSucceed()
+        val actual = JInt.fromJson(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -49,9 +49,9 @@ class JsonFTest {
     fun `Json Customer and back`() {
 
         val expected = Customer(123, "abc")
-        val json = JCustomer.build(expected)
+        val json = JCustomer.toJson(expected)
 
-        val actual = JCustomer.extract(json).shouldSucceed()
+        val actual = JCustomer.fromJson(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -68,9 +68,9 @@ class JsonFTest {
             Customer(3, "Carol")
         )
 
-        val node = jsonUserArray.build(expected)
+        val node = jsonUserArray.toJson(expected)
 
-        val actual = jsonUserArray.extract(node).shouldSucceed()
+        val actual = jsonUserArray.fromJson(node).shouldSucceed()
 
         expectThat(actual).isEqualTo(expected)
     }
@@ -81,11 +81,11 @@ class JsonFTest {
     @Test
     fun `Json with nullable and back`() {
 
-        val toothpasteJson = JProduct.build(toothpaste)
-        val offerJson = JProduct.build(offer)
+        val toothpasteJson = JProduct.toJson(toothpaste)
+        val offerJson = JProduct.toJson(offer)
 
-        val actualToothpaste = JProduct.extract(toothpasteJson).shouldSucceed()
-        val actualOffer = JProduct.extract(offerJson).shouldSucceed()
+        val actualToothpaste = JProduct.fromJson(toothpasteJson).shouldSucceed()
+        val actualOffer = JProduct.fromJson(offerJson).shouldSucceed()
 
         expect {
             that(actualToothpaste).isEqualTo(toothpaste)
@@ -98,9 +98,9 @@ class JsonFTest {
     @Test
     fun `Json with objects inside and back`() {
 
-        val json = JInvoice.build(invoice)
+        val json = JInvoice.toJson(invoice)
 
-        val actual = JInvoice.extract(json).shouldSucceed()
+        val actual = JInvoice.fromJson(json).shouldSucceed()
 
         expectThat(actual).isEqualTo(invoice)
     }

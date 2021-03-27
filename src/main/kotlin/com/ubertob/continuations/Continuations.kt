@@ -17,6 +17,8 @@ package com.ubertob.continuations
 fun fibonacci() = sequence {
     var terms = Pair(0, 1)
 
+    val p: Number
+
     // this sequence is infiniteww
     while (true) {
         yield(terms.first)

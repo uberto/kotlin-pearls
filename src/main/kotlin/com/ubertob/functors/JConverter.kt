@@ -2,9 +2,77 @@ package com.ubertob.functors
 
 import com.ubertob.outcome.*
 import com.ubertob.outcome.Outcome.Companion.tryThis
+import com.ubertob.unlearnoop.JsonNode
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
+
+/*
+a couple parser/render form an adjunction (https://en.wikipedia.org/wiki/Adjoint_functors)
+
+The laws are (no id because we cannot reconstruct a wrong json from the error):
+
+render `.` parse `.` render = render
+parse `.` render `.` parse = parse
+
+where:
+f `.` g: (x) -> g(f(x))
+render : JsonOutcome<T> -> JSON
+parse : JSON -> JsonOutcome<T>
+
+JSON here can be either the Json string or the JsonNode
+
+
+See also
+https://neoeinstein.github.io/blog/2015/12-13-chiron-json-ducks-monads/index.html
+--------
+
+ToJson<A> => (A) -> JsonNode
+FromJson<A> => (JsonNode) -> A
+
+
+
+
+from
+https://blog.jle.im/entry/foldl-adjunction.html
+---
+unit :: a -> Fold r (EnvList r a)
+counit :: EnvList r (Fold r a) -> a
+
+leftAdjunct :: (EnvList r a -> b) -> (a -> Fold r b)
+rightAdjunct :: (a -> Fold r b) -> (EnvList r a -> b)
+
+tabulateAdjunction :: (EnvList r () -> b) -> Fold r b
+indexAdjunction :: Fold r b -> EnvList r a -> b
+
+zipR :: Fold r a -> Fold r b -> Fold r (a, b)
+
+------------
+assuming:
+
+EnvList r a ==> ToJson<JsonNode, A> ==> ToJson<A>
+Fold r a  ==> FromJson<JsonNode, A> ==> FromJson<A>
+
+---------
+we have:
+
+unit :: (A) -> FromJson<ToJson<A>>
+counit ::  (ToJson<FromJson<A>>) -> A
+
+leftAdjunct :: (ToJson<A> -> B) -> (A -> FromJson<B>)
+rightAdjunct :: (A -> FromJson<B>) -> (ToJson<A> -> B)
+
+tabulateAdjunction :: (ToJson<Unit> -> B) -> FromJson<B>
+indexAdjunction :: (FromJson<B>) -> ToJson<A> -> B
+
+
+
+
+
+
+ */
+
+
 
 
 interface StringWrapper {
@@ -95,20 +163,59 @@ data class JsonError(val node: AbstractJsonNode?, val reason: String) : OutcomeE
 
 typealias JsonOutcome<T> = Outcome<JsonError, T>
 
-interface AdjointFunctors<A, B, C : Outcome<*, A>> {
-    fun build(value: A): B
-    fun extract(wrapped: B): C
+interface Functor<A>{
+    fun <B> transform(f: (A) -> B): Functor<B>
 }
 
-interface JsonAdjoint<T> : AdjointFunctors<T, AbstractJsonNode, JsonOutcome<T>> {
-    override fun extract(node: AbstractJsonNode): JsonOutcome<T>
-    override fun build(value: T): AbstractJsonNode
+/* Kotlin doesn't have HKT
+
+also this doesn't work:
+interface Functor<A, SELF: Functor<A, SELF>>{
+    fun <B, SELFB: SELF<B, SELFB>> transform(f: (A) -> B): Functor<B, SELFB>
+}
+
+
+
+interface Adjunction<A, LEFT: Functor<_>, RIGHT: Functor<_>> {
+    fun <B> leftAdjunct(f: (LEFT<A>) -> B): (A) -> RIGHT<B>
+    fun <B> rightAdjunct(f: (A) -> RIGHT<B>): (LEFT<A>) -> B
+}
+ */
+
+data class FromJson<A>(val parse: (JsonNode) -> A): Functor<A> {
+    override fun <B> transform(f: (A) -> B): FromJson<B>
+    = FromJson{ jn -> f(parse(jn)) }
+}
+
+//doesn't compile:
+//data class ToJson<A>(val render: (A) ->JsonNode): Functor<A> {
+//    override fun <B> transform(f: (A) -> B): ToJson<B>
+//            = ToJson{ b -> render(f(b)) }
+//}
+
+data class ToJson<A>(val node: JsonNode, val value: A): Functor<A> {
+    override fun <B> transform(f: (A) -> B): ToJson<B>
+            = ToJson(node, f(value))
+}
+
+
+
+interface JsonAdjunction<A> {
+    fun <B> leftAdjunct(f: (ToJson<A>) -> B): (A) -> FromJson<B>
+    fun <B> rightAdjunct(f: (A) -> FromJson<B>): (ToJson<A>) -> B
+}
+
+
+
+interface JConverter<T> {
+    fun fromJson(node: AbstractJsonNode): JsonOutcome<T>
+    fun toJson(value: T): AbstractJsonNode
 }
 
 typealias NodeWriter<T> = (JsonNodeObject, T) -> JsonNodeObject
 typealias NodeReader<T> = (JsonNodeObject) -> JsonOutcome<T>
 
-abstract class JProtocol<T : Any> : JsonAdjoint<T> {
+abstract class JProtocol<T : Any> : JConverter<T> {
 
     private val nodeWriters: AtomicReference<Set<NodeWriter<T>>> = AtomicReference(emptySet())
     private val nodeReaders: AtomicReference<Set<NodeReader<*>>> = AtomicReference(emptySet())
@@ -121,9 +228,9 @@ abstract class JProtocol<T : Any> : JsonAdjoint<T> {
         nodeReaders.getAndUpdate { set -> set + nodeReader }
     }
 
-    override fun extract(node: AbstractJsonNode): Outcome<JsonError, T> = node.asObject { deserialize(this) }
+    override fun fromJson(node: AbstractJsonNode): Outcome<JsonError, T> = node.asObject { deserialize(this) }
 
-    override fun build(value: T): AbstractJsonNode = serialize(value)
+    override fun toJson(value: T): AbstractJsonNode = serialize(value)
 
     abstract fun JsonNodeObject.tryDeserialize(): T?
 
@@ -169,52 +276,52 @@ abstract class JProtocol<T : Any> : JsonAdjoint<T> {
             }
 }
 
-object JBoolean : JsonAdjoint<Boolean> {
-    override fun extract(node: AbstractJsonNode): Outcome<JsonError, Boolean> = node.asBoolean()
+object JBoolean : JConverter<Boolean> {
+    override fun fromJson(node: AbstractJsonNode): Outcome<JsonError, Boolean> = node.asBoolean()
 
-    override fun build(value: Boolean): AbstractJsonNode = JsonNodeBoolean(value)
-
-}
-
-object JString : JsonAdjoint<String> {
-    override fun extract(node: AbstractJsonNode): Outcome<JsonError, String> = node.asText()
-
-    override fun build(value: String): AbstractJsonNode = JsonNodeString(value)
+    override fun toJson(value: Boolean): AbstractJsonNode = JsonNodeBoolean(value)
 
 }
 
-object JInt : JsonAdjoint<Int> {
-    override fun extract(node: AbstractJsonNode): Outcome<JsonError, Int> = node.asInt()
+object JString : JConverter<String> {
+    override fun fromJson(node: AbstractJsonNode): Outcome<JsonError, String> = node.asText()
 
-    override fun build(value: Int): AbstractJsonNode = JsonNodeInt(value)
+    override fun toJson(value: String): AbstractJsonNode = JsonNodeString(value)
+
+}
+
+object JInt : JConverter<Int> {
+    override fun fromJson(node: AbstractJsonNode): Outcome<JsonError, Int> = node.asInt()
+
+    override fun toJson(value: Int): AbstractJsonNode = JsonNodeInt(value)
 }
 
 
-object JLong : JsonAdjoint<Long> {
-    override fun extract(node: AbstractJsonNode): Outcome<JsonError, Long> = node.asLong()
+object JLong : JConverter<Long> {
+    override fun fromJson(node: AbstractJsonNode): Outcome<JsonError, Long> = node.asLong()
 
-    override fun build(value: Long): AbstractJsonNode = JsonNodeLong(value)
+    override fun toJson(value: Long): AbstractJsonNode = JsonNodeLong(value)
 }
 
-object JDouble : JsonAdjoint<Double> {
-    override fun extract(node: AbstractJsonNode): Outcome<JsonError, Double> = node.asDouble()
+object JDouble : JConverter<Double> {
+    override fun fromJson(node: AbstractJsonNode): Outcome<JsonError, Double> = node.asDouble()
 
-    override fun build(value: Double): AbstractJsonNode = JsonNodeDouble(value)
+    override fun toJson(value: Double): AbstractJsonNode = JsonNodeDouble(value)
 }
 
-data class JStringWrapper<T : StringWrapper>(val cons: (String) -> T) : JsonAdjoint<T> {
+data class JStringWrapper<T : StringWrapper>(val cons: (String) -> T) : JConverter<T> {
 
-    override fun extract(node: AbstractJsonNode): Outcome<JsonError, T> =
+    override fun fromJson(node: AbstractJsonNode): Outcome<JsonError, T> =
         node.asText().map(cons)
 
-    override fun build(value: T): AbstractJsonNode = JsonNodeString(value.raw)
+    override fun toJson(value: T): AbstractJsonNode = JsonNodeString(value.raw)
 
 }
 
-data class JArray<T : Any>(val helper: JsonAdjoint<T>) : JsonAdjoint<List<T>> {
-    override fun extract(node: AbstractJsonNode): Outcome<JsonError, List<T>> = mapFrom(node, helper::extract)
+data class JArray<T : Any>(val helper: JConverter<T>) : JConverter<List<T>> {
+    override fun fromJson(node: AbstractJsonNode): Outcome<JsonError, List<T>> = mapFrom(node, helper::fromJson)
 
-    override fun build(value: List<T>): AbstractJsonNode = mapToJson(value, helper::build)
+    override fun toJson(value: List<T>): AbstractJsonNode = mapToJson(value, helper::toJson)
 
     private fun <T : Any> mapToJson(objs: List<T>, f: (T) -> AbstractJsonNode): AbstractJsonNode =
         JsonNodeArray(objs.map(f))
@@ -242,33 +349,33 @@ sealed class JsonProperty<T> : Lens<T, JsonNodeObject, JsonOutcome<T>> {
 data class JsonParsingException(val error: JsonError) : RuntimeException()
 
 
-data class JsonPropMandatory<T : Any>(override val propName: String, val jf: JsonAdjoint<T>) : JsonProperty<T>() {
+data class JsonPropMandatory<T : Any>(override val propName: String, val jf: JConverter<T>) : JsonProperty<T>() {
 
     override fun getter(node: JsonNodeObject): Outcome<JsonError, T> =
         node.fieldMap[propName]
-            ?.let { idn -> jf.extract(idn) }
+            ?.let { idn -> jf.fromJson(idn) }
             ?: JsonError(node, "Not found $propName").asFailure()
 
     override fun setter(value: T): (JsonNodeObject) -> JsonNodeObject =
         { wrapped ->
-            wrapped.copy(fieldMap = wrapped.fieldMap + (propName to jf.build(value)))
+            wrapped.copy(fieldMap = wrapped.fieldMap + (propName to jf.toJson(value)))
         }
 
 
 }
 
 
-data class JsonPropOptional<T : Any>(override val propName: String, val jf: JsonAdjoint<T>) : JsonProperty<T?>() {
+data class JsonPropOptional<T : Any>(override val propName: String, val jf: JConverter<T>) : JsonProperty<T?>() {
 
     override fun getter(node: JsonNodeObject): Outcome<JsonError, T?> =
         node.fieldMap[propName]
-            ?.let { idn -> jf.extract(idn) }
+            ?.let { idn -> jf.fromJson(idn) }
             ?: null.asSuccess()
 
     override fun setter(value: T?): (JsonNodeObject) -> JsonNodeObject =
         { wrapped ->
             value?.let {
-                wrapped.copy(fieldMap = wrapped.fieldMap + (propName to jf.build(it)))
+                wrapped.copy(fieldMap = wrapped.fieldMap + (propName to jf.toJson(it)))
             } ?: wrapped
         }
 
@@ -295,23 +402,23 @@ sealed class JFieldBase<T, PT : Any>
 
 class JField<T : Any, PT : Any>(
     override val binder: (PT) -> T,
-    private val jsonAdjoint: JsonAdjoint<T>,
+    private val JConverter: JConverter<T>,
     private val jsonFieldName: String? = null
 ) : JFieldBase<T, PT>() {
 
     override fun buildJsonProperty(property: KProperty<*>): JsonProperty<T> =
-        JsonPropMandatory(jsonFieldName ?: property.name, jsonAdjoint)
+        JsonPropMandatory(jsonFieldName ?: property.name, JConverter)
 
 }
 
 class JFieldMaybe<T : Any, PT : Any>(
     override val binder: (PT) -> T?,
-    private val jsonAdjoint: JsonAdjoint<T>,
+    private val JConverter: JConverter<T>,
     private val jsonFieldName: String? = null
 ) : JFieldBase<T?, PT>() {
 
     override fun buildJsonProperty(property: KProperty<*>): JsonProperty<T?> =
-        JsonPropOptional(jsonFieldName ?: property.name, jsonAdjoint)
+        JsonPropOptional(jsonFieldName ?: property.name, JConverter)
 
 }
 

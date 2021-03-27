@@ -1,8 +1,6 @@
 package com.ubertob.functors
 
-import com.ubertob.outcome.Outcome
 import com.ubertob.outcome.bind
-import com.ubertob.outcome.flatMap
 
 data class T1<A>(val first: A) {
     fun <A1> map(fa: (A) -> A1): T1<A1> = T1(fa(first))
@@ -49,7 +47,7 @@ fun <A> P1<JsonOutcome<A>>.outcome(): JsonOutcome<P1<A>> =
 
 fun <A, A1> A.applyToAll(other: P1<(A) -> A1>): P1<A1> = Pair(Unit, other.second(this))
 
-fun <A, A1> P1<A>.extract(fa: (A) -> A1): A1 = fa(second)
+fun <A, A1> P1<A>.fromJson(fa: (A) -> A1): A1 = fa(second)
 
 
 fun <A, B, A1, B1> P2<A, B>.map(fa: (A) -> A1, fb: (B) -> B1): P2<A1, B1> =
@@ -59,8 +57,8 @@ fun <A, B, A1, B1> P2<A, B>.map(fa: (A) -> A1, fb: (B) -> B1): P2<A1, B1> =
 fun <A, B, A1, B1> P2<A, B>.apply(other: P2<(A) -> A1, (B) -> B1>): P2<A1, B1> =
     Pair(first.apply(other.first), other.second(second))
 
-fun <A, B, Z> P2<A, B>.extract(f: (A, B) -> Z): Z =
-    first.extract(f.curry1())(second)
+fun <A, B, Z> P2<A, B>.fromJson(f: (A, B) -> Z): Z =
+    first.fromJson(f.curry1())(second)
 
 @JvmName("applyToAllAB")
 fun <A, A1, B1> A.applyToAll(other: P2<(A) -> A1, (A) -> B1>): P2<A1, B1> = Pair(applyToAll(other.first), other.second(this))
@@ -76,7 +74,7 @@ fun <A, B, C, A1, B1, C1> P3<A, B, C>.map(fa: (A) -> A1, fb: (B) -> B1, fc: (C) 
 //fun <A, B, C, A1, B1, C1> P3<A, B, C>.apply3(other: P3<(A) -> A1, (B) -> B1, (C) -> C1>): P3<A1, B1, C1> =
 //    Pair(other.first(first), second.apply(other.second))
 
-fun <A, B, C, Z> P3<A, B, C>.extract(f: (A, B, C) -> Z): Z = first.extract(f.curry1())(second)
+fun <A, B, C, Z> P3<A, B, C>.fromJson(f: (A, B, C) -> Z): Z = first.fromJson(f.curry1())(second)
 
 @JvmName("applyToAllABC")
 fun <A, A1, B1, C1> A.applyToAll(other: P3<(A) -> A1, (A) -> B1, (A) -> C1>): P3<A1, B1, C1> = Pair(applyToAll(other.first), other.second(this))
