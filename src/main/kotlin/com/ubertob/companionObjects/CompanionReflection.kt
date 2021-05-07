@@ -20,21 +20,28 @@ data class SomethingElse(val field: Int) : IWrapped {
     }
 }
 
+data class SomethingWrong(val field: String) : IWrapped {
+}
 
-inline fun <reified T : IWrapped, reified TC : IComp<T>> validate(x: T): Boolean {
+//reified bug?
+inline fun <reified T : IWrapped, reified TC : IComp<T>, reified LL: List<T>> validate(x: T): Boolean {
 
     println("wrapped class ${T::class} ")
     println("comp class ${TC::class} ")
     println("is comp? ${TC::class.isCompanion} ") //require kotlin.reflect
     val comp = T::class.companionObjectInstance as TC
     val comp2 = T::class.companionObjectInstance as IComp<T>
-    val comp3 = TC::class.objectInstance
+    val comp3 = TC::class.objectInstance  //null
+    println("obj instance $comp")
     println("obj instance $comp2")
     println("obj instance $comp3")
     return comp.validate(x)
 }
 
 fun main() {
+
+    val r = listOf(1,2,3).drop(4)
+
 
     val valid = Something("ciao")
     val invalid = Something("ci")
@@ -44,5 +51,9 @@ fun main() {
 
     println(validate(validNUm))
     println(validate(valid))
+    println(validate(SomethingWrong("no companion"))) //runtime error! null cannot be cast to non-null type
+
+
+
 
 }

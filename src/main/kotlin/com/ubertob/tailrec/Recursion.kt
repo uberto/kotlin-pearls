@@ -14,7 +14,7 @@ fun sumAllNTR(acc: Int, x: Int):Int = when {
     else -> sumAllNTR(acc+x, x-1)
 }
 
-tailrec fun sumNumbers(nums: List<Int>): Int =
+tailrec fun sumNumbers(nums: List<Int>): Int =  //not a tail rec!
     if (nums.size == 2)
         nums[0] + nums[1]
     else

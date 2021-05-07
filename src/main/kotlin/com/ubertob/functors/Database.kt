@@ -15,8 +15,8 @@ class DBConn(connStr: String) {
 
 fun articleReader(resultSet: ResultSet): Article = TODO()
 
-
-inline class Email(val raw: String)
+@JvmInline
+value class Email(val raw: String)
 data class Author(val name: String, val email: Email)
 data class Article(val title: String, val author: Author)
 
