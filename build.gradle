@@ -10,7 +10,6 @@ sourceCompatibility = 1.11
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 
@@ -23,8 +22,8 @@ dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.3'
     testImplementation 'com.willowtreeapps.assertk:assertk-jvm:0.17'
-    testImplementation 'io.strikt:strikt-core:0.26.1'
-    testImplementation 'com.beust:klaxon:5.0.1'
+    testImplementation 'io.strikt:strikt-core:0.31.0'
+    testImplementation 'com.beust:klaxon:5.5'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.4.2'
     testRuntime 'org.junit.jupiter:junit-jupiter-engine:5.4.2'
 }
