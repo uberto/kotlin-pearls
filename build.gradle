@@ -36,6 +36,6 @@ test {
 
 compileKotlin {
     kotlinOptions {
-        freeCompilerArgs = ["-XXLanguage:+InlineClasses"]
+        freeCompilerArgs = ["-XXLanguage:+InlineClasses", "-Xcontext-receivers"]
     }
 }
